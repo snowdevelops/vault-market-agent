@@ -18,8 +18,11 @@ fi
 : "${VAULT_DIR:?VAULT_DIR is not set in .env}"
 VAULT_DIR="${VAULT_DIR/#\~/$HOME}"
 AGENT_DIR="${AGENT_DIR:-Business}"
+AGENT_DIR="${AGENT_DIR%/}"
 WORK="$VAULT_DIR/$AGENT_DIR"
 CLAUDE_BIN="${CLAUDE_BIN:-$HOME/.local/bin/claude}"
+# Full event stream (follow it live with scripts/watch_agent.py) and a short log.
+STREAM="$WORK/.last_${JOB}.jsonl"
 LOG="$WORK/.last_${JOB}.log"
 
 if [[ ! -d "$WORK" ]]; then
@@ -40,11 +43,17 @@ cd "$WORK"
   --settings "$REPO_DIR/config/agent-settings.json" \
   --permission-mode acceptEdits \
   --allowedTools "Read,Glob,Grep,WebSearch,WebFetch" \
-  > "$LOG" 2>&1 || failed=1
+  --output-format stream-json --verbose \
+  > "$STREAM" 2> "$LOG" || failed=1
+
+# Append the outcome and final answer to the short log. A stream with no result,
+# or one that ended in an error, also counts as a failed run.
+python3 "$REPO_DIR/scripts/watch_agent.py" --summary "$STREAM" >> "$LOG" 2>&1 || failed=1
 
 # Local history only. The vault repo has no remote, so nothing leaves this machine.
+# The run logs are left out: the stream is large and changes on every run.
 if git -C "$VAULT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  git -C "$VAULT_DIR" add -- "$AGENT_DIR" >/dev/null 2>&1 || true
+  git -C "$VAULT_DIR" add -- "$AGENT_DIR" ":(exclude)$AGENT_DIR/.last_*" >/dev/null 2>&1 || true
   git -C "$VAULT_DIR" commit -qm "agent $JOB $(date +%F)" >/dev/null 2>&1 || true
 fi
 
