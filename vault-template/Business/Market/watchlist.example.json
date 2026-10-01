@@ -1,0 +1,6 @@
+{
+  "_note": "Copy to watchlist.json (gitignored in the code repo; lives only in your vault). One entry per vehicle you hold or track. Find FIPE codes on veiculos.fipe.org.br. Entries starting with 000000 are skipped.",
+  "vehicles": [
+    {"label": "Example", "fipe_code": "000000-0", "model_year": 2020}
+  ]
+}
