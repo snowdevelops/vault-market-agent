@@ -340,5 +340,24 @@ class RunQuestionTests(unittest.TestCase):
             self.assertEqual(result, "error")
 
 
+class ServiceFileTests(unittest.TestCase):
+    def test_user_service_restarts_on_failure_only(self):
+        unit = (REPO / "deploy" / "vault-agent-bot.service").read_text()
+        lines = {line.split("=", 1)[0]: line.split("=", 1)[1] for line in unit.splitlines()
+                 if "=" in line and not line.startswith("#")}
+        self.assertEqual(lines["Restart"], "on-failure")
+        self.assertEqual(lines["RestartPreventExitStatus"], str(bot.EXIT_CONFIG))
+        self.assertEqual(lines["WantedBy"], "default.target")  # user service, not multi-user
+        self.assertIn('"@REPO_DIR@/scripts/telegram_bot.py"', lines["ExecStart"])
+        self.assertNotIn("User", lines)
+
+    def test_installer_targets_user_systemd(self):
+        script = (REPO / "scripts" / "install_bot_service.sh").read_text()
+        self.assertIn("systemd/user", script)
+        self.assertIn("systemctl --user enable", script)
+        self.assertNotIn("sudo systemctl", script)
+        self.assertNotIn("cat \"$REPO_DIR/.env\"", script)
+
+
 if __name__ == "__main__":
     unittest.main()

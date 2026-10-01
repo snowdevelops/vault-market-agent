@@ -1,0 +1,19 @@
+# systemd user service for the Telegram bot (scripts/telegram_bot.py).
+# Install with scripts/install_bot_service.sh, which fills in @REPO_DIR@ and
+# @PYTHON@ and copies this file to ~/.config/systemd/user/.
+[Unit]
+Description=vault-market-agent Telegram bot
+Documentation=https://github.com/snowdevelops/vault-market-agent
+
+[Service]
+Type=simple
+WorkingDirectory=@REPO_DIR@
+ExecStart="@PYTHON@" "@REPO_DIR@/scripts/telegram_bot.py"
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=10
+# Exit code 78 means .env is incomplete; restarting would not help.
+RestartPreventExitStatus=78
+
+[Install]
+WantedBy=default.target
