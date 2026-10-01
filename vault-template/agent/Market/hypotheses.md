@@ -1,15 +1,15 @@
 ---
 type: hypotheses
 ---
-# Market hypotheses
+# Hipóteses de mercado
 
-Your read of the market, split into claims that data can confirm or kill. The weekly brief appends evidence; you decide when a hypothesis is confirmed or dropped.
+Sua leitura do mercado, dividida em afirmações que os dados podem confirmar ou derrubar. O brief semanal acrescenta evidências; você decide quando uma hipótese está confirmada ou descartada.
 
-## H1: (example) Expensive combustion cars sell slower
-Combustion cars listed above a price threshold take longer to sell than those below it.
-- How to test: compare days-to-sell in your own deals and comparables, above vs below the threshold.
-- Status: open
+## H1: (exemplo) Carros a combustão mais caros vendem mais devagar
+Carros a combustão anunciados acima de uma faixa de preço demoram mais para vender do que os abaixo dela.
+- Como testar: comparar os dias até a venda nos seus negócios e em comparáveis, acima e abaixo da faixa.
+- Status: aberta
 
-## Evidence log
-| Date | Hypothesis | Evidence | Direction (supports / weakens) | Source |
+## Registro de evidências
+| Data | Hipótese | Evidência | Direção (reforça / enfraquece) | Fonte |
 |---|---|---|---|---|

@@ -1,19 +1,19 @@
 ---
 type: vehicle-deal
-status: acquiring        # acquiring | reconditioning | listed | sold | dropped
-vehicle: ""              # make, model, version
+status: acquiring        # acquiring | reconditioning | listed | sold | dropped (mantenha em inglês)
+vehicle: ""              # marca, modelo, versão
 model_year:
 fuel: ""                 # flex | gasoline | diesel | hybrid | electric
 km:
-fipe_code: ""            # also add it to scripts/watchlist.json
+fipe_code: ""            # acrescente também em Market/watchlist.json
 fipe_at_purchase:
 purchase_price:
-docs_cost:               # debts, transfer, regularization
-recon_cost:              # mechanics, body, cleaning, tires
-other_costs:             # commission, transport, inspection report
-total_cost:              # purchase + docs + recon + other
+docs_cost:               # débitos, transferência, regularização
+recon_cost:              # mecânica, funilaria, limpeza, pneus
+other_costs:             # comissão, transporte, laudo cautelar
+total_cost:              # compra + documentação + preparação + outros
 target_margin_pct: 15
-floor_price:             # lowest price you accept before re-planning
+floor_price:             # menor preço que você aceita antes de replanejar
 max_days_listed: 45
 listed_on:
 sold_on:
@@ -22,34 +22,34 @@ sale_channel: ""
 ---
 # {{title}}
 
-## Due diligence (before paying)
-- [ ] Detran-MG: IPVA, fines, licensing, transfer pending
-- [ ] Lien (gravame / alienação fiduciária) checked
-- [ ] Judicial or administrative restrictions (RENAJUD, etc.) checked
-- [ ] Auction, total-loss, or theft-recovery history checked
-- [ ] Inspection report (laudo cautelar) done
-- [ ] Open recalls checked
-- Notes:
+## Checagens (antes de pagar)
+- [ ] Detran-MG: IPVA, multas, licenciamento, transferência pendente
+- [ ] Gravame (alienação fiduciária) verificado
+- [ ] Restrições judiciais ou administrativas (RENAJUD etc.) verificadas
+- [ ] Histórico de leilão, sinistro com perda total ou recuperação de roubo verificado
+- [ ] Laudo cautelar feito
+- [ ] Recalls em aberto verificados
+- Observações:
 
-## Pricing plan
-- List price:
-- Why this price (FIPE, comparables, bracket):
-- Floor price:
-- Review dates: day 15, day 30
+## Plano de preço
+- Preço de anúncio:
+- Por que esse preço (FIPE, comparáveis, faixa de busca):
+- Preço mínimo:
+- Datas de revisão: dia 15, dia 30
 
-## Comparable listings (logged by hand)
-| Date | Channel | Year/version | Km | Asking price | Notes |
+## Anúncios comparáveis (registrados à mão)
+| Data | Canal | Ano/versão | Km | Preço pedido | Observações |
 |---|---|---|---|---|---|
 
-## Price log
-| Date | Price | Reason |
+## Histórico de preço
+| Data | Preço | Motivo |
 |---|---|---|
 
-## Leads log
-| Date | Channel | Type (question / visit / offer) | Offer value | Outcome |
+## Registro de contatos
+| Data | Canal | Tipo (pergunta / visita / oferta) | Valor da oferta | Resultado |
 |---|---|---|---|---|
 
-## Outcome and lessons
-- Days to sell:
-- Net profit (sold price − total cost − carrying cost):
-- What I'd do differently:
+## Resultado e lições
+- Dias até vender:
+- Lucro líquido (preço de venda − custo total − custo de manter parado):
+- O que eu faria diferente:

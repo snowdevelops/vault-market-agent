@@ -122,6 +122,21 @@ class ConfigTests(unittest.TestCase):
         self.assertIn("Bash", perms["deny"])
         self.assertIn("Edit(./Deals/**)", perms["deny"])
 
+    def test_agent_settings_language_and_unchanged_denies(self):
+        import json
+        path = Path(__file__).resolve().parents[1] / "config" / "agent-settings.json"
+        settings = json.loads(path.read_text())
+        self.assertEqual(settings["language"], "portuguese")
+        self.assertEqual(sorted(settings["permissions"]["deny"]), sorted([
+            "Bash",
+            "Edit(./Deals/**)",
+            "Edit(./Templates/**)",
+            "Edit(./Market/data/**)",
+            "Edit(./Market/watchlist.json)",
+            "Edit(./CLAUDE.md)",
+        ]))
+        self.assertNotIn("allow", settings["permissions"])
+
 
 if __name__ == "__main__":
     unittest.main()

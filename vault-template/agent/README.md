@@ -1,22 +1,24 @@
-# Agent folder (lives in your private vault)
+# Pasta do agente (fica no seu vault privado)
 
-Copy this folder into your Obsidian vault and name it whatever you set as `AGENT_DIR` in `.env` (default `Business`). The agent can only read and write inside this folder; the rest of your vault is invisible to it.
+Copie esta pasta para o seu vault do Obsidian e dê a ela o nome definido em `AGENT_DIR` no `.env` (padrão `Business`). O agente só lê e escreve dentro desta pasta; o resto do seu vault fica invisível para ele.
 
-- `CLAUDE.md`: the agent's rules. It loads them automatically on every run.
-- `Knowledge/`: built by the agent through research. Start reading at `Knowledge/_index.md`.
-- `Research/log.md`: one short entry per research run.
-- `Briefs/`: weekly briefs.
-- `Deals/`: your deal notes (the agent can read but never edit them). Copy `Templates/vehicle-deal.md` to start one.
-- `Market/`: data from the daily script, your watchlist and your hypotheses.
+- `CLAUDE.md`: as regras do agente. Ele as carrega automaticamente em toda execução.
+- `Knowledge/`: construída pelo agente com pesquisa. Comece a ler por `Knowledge/_index.md`.
+- `Research/log.md`: uma entrada curta por sessão de pesquisa.
+- `Briefs/`: briefs semanais.
+- `Deals/`: suas notas de negócios (o agente lê, mas nunca edita). Copie `Templates/vehicle-deal.md` para começar uma.
+- `Market/`: dados do script diário, sua lista de veículos acompanhados e suas hipóteses.
 
-## Dashboard (Dataview plugin)
+Os nomes de pastas, de notas e as chaves do frontmatter ficam em inglês porque os scripts e o Dataview dependem deles.
+
+## Painel (plugin Dataview)
 
 ~~~
 ```dataview
-TABLE vehicle, status, total_cost, fipe_at_purchase, listed_on, (date(today) - listed_on).days AS "days listed"
+TABLE vehicle, status, total_cost, fipe_at_purchase, listed_on, (date(today) - listed_on).days AS "dias anunciado"
 FROM "Business/Deals"
 WHERE status != "sold" AND status != "dropped"
 SORT listed_on ASC
 ```
 ~~~
-Change `"Business/Deals"` if you named the folder differently.
+Troque `"Business/Deals"` se você deu outro nome à pasta.

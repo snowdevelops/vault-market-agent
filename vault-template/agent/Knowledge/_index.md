@@ -1,21 +1,23 @@
 ---
 type: knowledge-index
 ---
-# Knowledge index
+# Índice de conhecimento
 
-The agent keeps this table up to date. Priority 1 topics are researched first and refreshed every 30 days; others every 60 days. The agent may add rows when it finds an important topic that is missing.
+O agente mantém esta tabela atualizada. Temas de prioridade 1 são pesquisados primeiro e revisados a cada 30 dias; os demais, a cada 60 dias. O agente pode acrescentar linhas quando encontrar um tema importante que esteja faltando.
 
-| Note | Topic | Priority | Status | Last researched | Confidence |
+Os valores das colunas Status (`empty`, `partial`, `researched`) e Confiança (`low`, `medium`, `high`) e os nomes das notas ficam em inglês, porque os prompts dependem deles.
+
+| Nota | Tema | Prioridade | Status | Última pesquisa | Confiança |
 |---|---|---|---|---|---|
-| [[vehicle-documentation-and-risks]] | Transfer at Detran-MG, inspection (vistoria/laudo cautelar), liens, judicial blocks, auction and total-loss history, how each affects resale value and financing | 1 | empty | | |
-| [[reseller-legal-and-tax]] | Rules for buying and reselling vehicles regularly as an individual vs a company (CNPJ, MEI limits, taxes, invoices, consumer-law warranty obligations) | 1 | empty | | |
-| [[vehicle-credit]] | Auto-loan rates, approval rates, down payments, terms, defaults; how buyers finance popular used cars | 1 | empty | | |
-| [[used-vehicle-market-brazil]] | Volumes, segments, vehicle age bands, seasonality, price trends (Fenauto, Fenabrave) | 1 | empty | | |
-| [[uberlandia-auto-market]] | Local demand, dealer and lot landscape, popular models and body types in the region, local events and seasonality | 1 | empty | | |
-| [[pricing-and-depreciation]] | How FIPE is calculated, how dealers price, depreciation curves for popular models, search-bracket pricing, carrying cost | 1 | empty | | |
-| [[sales-channels]] | Platforms and channels used to sell popular cars in Brazil and in Uberlândia: audience, fees, rules, what works for which segment | 2 | empty | | |
-| [[chinese-and-electric-vehicles]] | Chinese brands and EVs in Brazil: prices, import tax schedule, market share, effect on used combustion car values | 2 | empty | | |
-| [[popular-models-guide]] | Popular models: value retention, common defects, parts and maintenance cost, insurance cost, which sell fastest | 2 | empty | | |
-| [[macro-brazil]] | Selic path, inflation, employment, income, elections and their effect on car demand | 2 | empty | | |
-| [[uberlandia-economy]] | Population, income, main sectors (agribusiness, logistics, services), employment trends | 3 | empty | | |
-| [[uberlandia-real-estate]] | Prices per m2 by region, launches and inventory, financing, rental yields (for later real estate work) | 3 | empty | | |
+| [[vehicle-documentation-and-risks]] | Transferência no Detran-MG, vistoria e laudo cautelar, gravames, bloqueios judiciais, histórico de leilão e sinistro com perda total, e como cada um afeta o valor de revenda e o financiamento | 1 | empty | | |
+| [[reseller-legal-and-tax]] | Regras para comprar e revender veículos com frequência como pessoa física ou jurídica (CNPJ, limites do MEI, impostos, notas fiscais, garantia pelo Código de Defesa do Consumidor) | 1 | empty | | |
+| [[vehicle-credit]] | Juros do financiamento de veículos, taxas de aprovação, entrada, prazos, inadimplência; como os compradores financiam carros populares usados | 1 | empty | | |
+| [[used-vehicle-market-brazil]] | Volumes, segmentos, faixas de idade dos veículos, sazonalidade, tendências de preço (Fenauto, Fenabrave) | 1 | empty | | |
+| [[uberlandia-auto-market]] | Demanda local, lojas e garagens da cidade, modelos e carrocerias populares na região, eventos locais e sazonalidade | 1 | empty | | |
+| [[pricing-and-depreciation]] | Como a FIPE é calculada, como as lojas precificam, curvas de depreciação dos modelos populares, faixas de preço nas buscas, custo de manter o carro parado | 1 | empty | | |
+| [[sales-channels]] | Plataformas e canais usados para vender carros populares no Brasil e em Uberlândia: público, tarifas, regras, o que funciona para cada segmento | 2 | empty | | |
+| [[chinese-and-electric-vehicles]] | Marcas chinesas e elétricos no Brasil: preços, cronograma do imposto de importação, participação de mercado, efeito no valor dos usados a combustão | 2 | empty | | |
+| [[popular-models-guide]] | Modelos populares: retenção de valor, defeitos comuns, custo de peças e manutenção, custo do seguro, quais vendem mais rápido | 2 | empty | | |
+| [[macro-brazil]] | Trajetória da Selic, inflação, emprego, renda, eleições e o efeito na demanda por carros | 2 | empty | | |
+| [[uberlandia-economy]] | População, renda, setores principais (agronegócio, logística, serviços), tendências de emprego | 3 | empty | | |
+| [[uberlandia-real-estate]] | Preço do m² por região, lançamentos e estoque, financiamento, rentabilidade de aluguel (para o trabalho futuro com imóveis) | 3 | empty | | |

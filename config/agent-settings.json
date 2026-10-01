@@ -1,4 +1,5 @@
 {
+  "language": "portuguese",
   "permissions": {
     "blockReadsOutsideWorkingDirectories": true,
     "deny": [

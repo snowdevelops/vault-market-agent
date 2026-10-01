@@ -1,6 +1,6 @@
 ---
 type: research-log
 ---
-# Research log
+# Log de pesquisa
 
-The agent appends one entry per research run, newest at the bottom.
+O agente acrescenta uma entrada por sessão de pesquisa, a mais recente no final.
