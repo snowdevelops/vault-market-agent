@@ -5,6 +5,7 @@ Send a short, privacy-safe update to Telegram after an agent run.
   python3 scripts/notify_telegram.py brief            'Resumo' section of the newest weekly brief
   python3 scripts/notify_telegram.py research         newest entry of Research/log.md
   python3 scripts/notify_telegram.py --failed JOB     report that a run failed
+  python3 scripts/notify_telegram.py --busy JOB       report that a run was skipped (lock)
   python3 scripts/notify_telegram.py --test           send a test message
   add --dry-run to print instead of sending
 
@@ -103,6 +104,12 @@ def build_failed_message(job):
     return f"FALHA na execução do agente ({label}). Veja .last_{job}.log na pasta do agente no servidor."
 
 
+def build_busy_message(job):
+    label = JOB_LABELS.get(job, job)
+    return (f"Execução do agente ({label}) cancelada: outro trabalho ainda estava rodando "
+            "depois de 30 minutos de espera.")
+
+
 def send(text):
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
@@ -123,6 +130,9 @@ def send(text):
 def compose(args):
     if "--test" in args:
         return "Mensagem de teste do vault-market-agent. Se você está lendo isto, as notificações funcionam."
+    if "--busy" in args:
+        i = args.index("--busy")
+        return build_busy_message(args[i + 1] if i + 1 < len(args) else "agent")
     if "--failed" in args:
         i = args.index("--failed")
         job = args[i + 1] if i + 1 < len(args) else "agent"

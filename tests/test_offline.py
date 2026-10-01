@@ -87,6 +87,9 @@ class SectionTests(unittest.TestCase):
     def test_research_message_empty_log(self):
         self.assertIn("vazio", notify_telegram.build_research_message("# Log de pesquisa\n"))
 
+    def test_busy_message_names_job(self):
+        self.assertIn("brief semanal", notify_telegram.build_busy_message("brief"))
+
     def test_failed_message_names_job_and_log(self):
         msg = notify_telegram.build_failed_message("research")
         self.assertIn("pesquisa", msg)

@@ -13,6 +13,9 @@ history.csv
 latest.md
 watchlist.json
 
+# Job lock, run status and bot state (scripts/status.py, scripts/telegram_bot.py)
+.state/
+
 # Python
 __pycache__/
 *.pyc

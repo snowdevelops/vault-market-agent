@@ -3,6 +3,10 @@
 #   run_agent.sh research   deepen the knowledge base (Knowledge/)
 #   run_agent.sh brief      refresh data, then write the weekly brief (Briefs/)
 # Paths and secrets come from .env (gitignored). Schedule with cron.
+#
+# Only one job runs at a time: a second one waits for the lock up to 30 minutes
+# (AGENT_LOCK_WAIT seconds), then gives up with exit code 75.
+# AGENT_SKIP_NOTIFY=1 skips the Telegram message (the bot replies itself).
 set -euo pipefail
 
 JOB="${1:-}"
@@ -30,6 +34,26 @@ if [[ ! -d "$WORK" ]]; then
   exit 1
 fi
 
+notify() {
+  if [[ -n "${TELEGRAM_BOT_TOKEN:-}" && -z "${AGENT_SKIP_NOTIFY:-}" ]]; then
+    python3 "$REPO_DIR/scripts/notify_telegram.py" "$@" || echo "telegram notify failed"
+  fi
+}
+
+# One job at a time. The lock and the run status live in this repo, not the vault.
+STATE_DIR="$REPO_DIR/.state"
+LOCK_WAIT="${AGENT_LOCK_WAIT:-1800}"
+mkdir -p "$STATE_DIR"
+exec 9>"$STATE_DIR/agent.lock"
+if ! flock -w "$LOCK_WAIT" 9; then
+  if (( LOCK_WAIT >= 60 )); then wait_text="$((LOCK_WAIT / 60)) min"; else wait_text="${LOCK_WAIT}s"; fi
+  echo "$(date '+%F %T') $JOB: another agent job is still running after waiting $wait_text; giving up." >&2
+  notify --busy "$JOB"
+  exit 75
+fi
+python3 "$REPO_DIR/scripts/status.py" start "$JOB" "$$" || echo "could not record job status" >&2
+trap 'python3 "$REPO_DIR/scripts/status.py" finish "$JOB" "$?" || echo "could not record job status" >&2' EXIT
+
 if [[ "$JOB" == "brief" ]]; then
   python3 "$REPO_DIR/scripts/fetch_market.py" || echo "fetch had errors; the brief will report them"
 fi
@@ -37,6 +61,8 @@ fi
 # The agent starts INSIDE its folder and the settings file blocks every read
 # outside it, all shell commands, and edits to the owner's files. The settings
 # file lives in this repo, outside the vault, so the agent cannot change it.
+# 9>&- keeps the lock out of Claude's child processes, so it is released when
+# this script exits.
 failed=0
 cd "$WORK"
 "$CLAUDE_BIN" -p "$(cat "$REPO_DIR/prompts/$JOB.md")" \
@@ -44,7 +70,7 @@ cd "$WORK"
   --permission-mode acceptEdits \
   --allowedTools "Read,Glob,Grep,WebSearch,WebFetch" \
   --output-format stream-json --verbose \
-  > "$STREAM" 2> "$LOG" || failed=1
+  > "$STREAM" 2> "$LOG" 9>&- || failed=1
 
 # Append the outcome and final answer to the short log. A stream with no result,
 # or one that ended in an error, also counts as a failed run.
@@ -57,12 +83,10 @@ if git -C "$VAULT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git -C "$VAULT_DIR" commit -qm "agent $JOB $(date +%F)" >/dev/null 2>&1 || true
 fi
 
-if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
-  if [[ $failed -eq 1 ]]; then
-    python3 "$REPO_DIR/scripts/notify_telegram.py" --failed "$JOB" || echo "telegram notify failed"
-  else
-    python3 "$REPO_DIR/scripts/notify_telegram.py" "$JOB" || echo "telegram notify failed"
-  fi
+if [[ $failed -eq 1 ]]; then
+  notify --failed "$JOB"
+else
+  notify "$JOB"
 fi
 
 exit $failed
