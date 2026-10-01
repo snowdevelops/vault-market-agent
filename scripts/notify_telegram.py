@@ -18,6 +18,7 @@ Needs TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env. Standard library only.
 import json
 import os
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -110,21 +111,32 @@ def build_busy_message(job):
             "depois de 30 minutos de espera.")
 
 
-def send(text):
+def api(method, params=None, timeout=30):
+    """Call a Telegram Bot API method and return its result. Errors never include
+    the request URL, because it contains the token."""
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-    if not token or not chat_id:
-        raise SystemExit("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID missing in .env")
-    data = urllib.parse.urlencode({
-        "chat_id": chat_id,
-        "text": text,
-        "disable_web_page_preview": "true",
-    }).encode()
-    req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=data)
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        body = json.loads(resp.read().decode("utf-8"))
+    if not token:
+        raise SystemExit("TELEGRAM_BOT_TOKEN missing in .env")
+    data = urllib.parse.urlencode(params or {}).encode()
+    req = urllib.request.Request(f"https://api.telegram.org/bot{token}/{method}", data=data)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:
+            body = json.loads(e.read().decode("utf-8"))
+        except ValueError:
+            body = {"description": f"HTTP {e.code}"}
     if not body.get("ok"):
-        raise RuntimeError(f"Telegram refused the message: {body.get('description')}")
+        raise RuntimeError(f"Telegram {method} failed: {body.get('description')}")
+    return body.get("result")
+
+
+def send(text):
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not chat_id:
+        raise SystemExit("TELEGRAM_CHAT_ID missing in .env")
+    api("sendMessage", {"chat_id": chat_id, "text": text, "disable_web_page_preview": "true"})
 
 
 def compose(args):

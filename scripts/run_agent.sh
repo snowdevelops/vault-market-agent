@@ -62,10 +62,10 @@ fi
 # outside it, all shell commands, and edits to the owner's files. The settings
 # file lives in this repo, outside the vault, so the agent cannot change it.
 # 9>&- keeps the lock out of Claude's child processes, so it is released when
-# this script exits.
+# this script exits, and env -u keeps the Telegram token out of its environment.
 failed=0
 cd "$WORK"
-"$CLAUDE_BIN" -p "$(cat "$REPO_DIR/prompts/$JOB.md")" \
+env -u TELEGRAM_BOT_TOKEN "$CLAUDE_BIN" -p "$(cat "$REPO_DIR/prompts/$JOB.md")" \
   --settings "$REPO_DIR/config/agent-settings.json" \
   --permission-mode acceptEdits \
   --allowedTools "Read,Glob,Grep,WebSearch,WebFetch" \

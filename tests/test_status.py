@@ -120,7 +120,8 @@ try:
 except OSError:
     fd9_open = False
 state = json.load(open(os.environ["STUB_STATE"]))
-json.dump({"argv": sys.argv[1:], "cwd": os.getcwd(), "fd9_open": fd9_open, "state": state},
+json.dump({"argv": sys.argv[1:], "cwd": os.getcwd(), "fd9_open": fd9_open, "state": state,
+           "has_token": "TELEGRAM_BOT_TOKEN" in os.environ},
           open(os.environ["STUB_RECORD"], "w"))
 print(json.dumps({"type": "system", "subtype": "init", "cwd": os.getcwd(), "model": "stub"}))
 print(json.dumps({"type": "assistant", "message": {"content": [
@@ -164,7 +165,8 @@ class RunAgentTests(unittest.TestCase):
                               env=env, capture_output=True, text=True, timeout=60)
 
     def test_run_uses_agent_folder_settings_and_records_status(self):
-        proc = self.run_agent()
+        # A fake token checks it never reaches claude; skipping the notify keeps it offline.
+        proc = self.run_agent(("TELEGRAM_BOT_TOKEN", "fake-token"), ("AGENT_SKIP_NOTIFY", "1"))
         self.assertEqual(proc.returncode, 0, proc.stderr)
 
         call = json.loads(self.record.read_text())
@@ -174,6 +176,7 @@ class RunAgentTests(unittest.TestCase):
         self.assertEqual(argv[argv.index("--output-format") + 1], "stream-json")
         self.assertIn("--verbose", argv)
         self.assertFalse(call["fd9_open"], "the lock must not leak into claude")
+        self.assertFalse(call["has_token"], "the Telegram token must not reach claude")
         self.assertEqual(call["state"]["running"]["job"], "research")
 
         events = [json.loads(line) for line in (self.work / ".last_research.jsonl").read_text().splitlines()]
