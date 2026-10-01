@@ -46,12 +46,22 @@ class SectionTests(unittest.TestCase):
         self.assertEqual(notify_telegram.count_fetch_errors(text), 2)
 
     def test_message_is_capped(self):
-        msg = notify_telegram.build_message("2026-10-05", "## TL;DR\n" + "x" * 10000, 0)
+        msg = notify_telegram.build_brief_message("2026-10-05", "## TL;DR\n" + "x" * 10000, 0)
         self.assertLessEqual(len(msg), notify_telegram.MAX_LEN)
 
     def test_message_mentions_errors(self):
-        msg = notify_telegram.build_message("2026-10-05", BRIEF, 3)
+        msg = notify_telegram.build_brief_message("2026-10-05", BRIEF, 3)
         self.assertIn("3 data fetch error", msg)
+
+    def test_research_message_uses_last_entry(self):
+        log = "# Research log\n\n## 2026-10-03\n- Topics: a\n\n## 2026-10-06\n- Topics: b\n"
+        msg = notify_telegram.build_research_message(log)
+        self.assertIn("2026-10-06", msg)
+        self.assertIn("Topics: b", msg)
+        self.assertNotIn("Topics: a", msg)
+
+    def test_research_message_empty_log(self):
+        self.assertIn("empty", notify_telegram.build_research_message("# Research log\n"))
 
 
 class FilesTests(unittest.TestCase):
@@ -71,6 +81,46 @@ class FilesTests(unittest.TestCase):
             common.load_env(env)
             self.assertEqual(os.environ["TEST_KEY_A"], "from_env")
             self.assertEqual(os.environ["TEST_KEY_B"], "quoted")
+
+    def test_agent_dir_resolves_subfolder(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "Negócios" / "Agente").mkdir(parents=True)
+            old = {k: os.environ.get(k) for k in ("VAULT_DIR", "AGENT_DIR")}
+            os.environ["VAULT_DIR"] = d
+            os.environ["AGENT_DIR"] = "Negócios/Agente/"
+            try:
+                self.assertEqual(common.agent_dir(), Path(d) / "Negócios" / "Agente")
+            finally:
+                for k, v in old.items():
+                    if v is None:
+                        os.environ.pop(k, None)
+                    else:
+                        os.environ[k] = v
+
+    def test_agent_dir_missing_exits(self):
+        with tempfile.TemporaryDirectory() as d:
+            old = {k: os.environ.get(k) for k in ("VAULT_DIR", "AGENT_DIR")}
+            os.environ["VAULT_DIR"] = d
+            os.environ["AGENT_DIR"] = "Nope"
+            try:
+                with self.assertRaises(SystemExit):
+                    common.agent_dir()
+            finally:
+                for k, v in old.items():
+                    if v is None:
+                        os.environ.pop(k, None)
+                    else:
+                        os.environ[k] = v
+
+
+class ConfigTests(unittest.TestCase):
+    def test_agent_settings_block_reads_and_shell(self):
+        import json
+        path = Path(__file__).resolve().parents[1] / "config" / "agent-settings.json"
+        perms = json.loads(path.read_text())["permissions"]
+        self.assertTrue(perms["blockReadsOutsideWorkingDirectories"])
+        self.assertIn("Bash", perms["deny"])
+        self.assertIn("Edit(./Deals/**)", perms["deny"])
 
 
 if __name__ == "__main__":

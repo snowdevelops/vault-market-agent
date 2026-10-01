@@ -1,8 +1,8 @@
-"""Shared helpers: load .env and resolve the vault path.
+"""Shared helpers: load .env and resolve the vault and agent folder paths.
 
 The vault (with real deal data) lives OUTSIDE this repository. Its location comes
 from VAULT_DIR in .env, which is gitignored, so no private path or data ever lands
-in version control.
+in version control. The agent only works inside AGENT_DIR, a subfolder of the vault.
 """
 import os
 from pathlib import Path
@@ -33,4 +33,14 @@ def vault_dir():
     path = Path(value).expanduser()
     if not path.is_dir():
         raise SystemExit(f"VAULT_DIR does not exist: {path}")
+    return path
+
+
+def agent_dir():
+    """Return the agent's folder inside the vault (AGENT_DIR, default 'Business')."""
+    vault = vault_dir()
+    name = os.environ.get("AGENT_DIR", "Business").strip().strip("/")
+    path = vault / name
+    if not path.is_dir():
+        raise SystemExit(f"Agent folder not found: {path}. Copy vault-template/agent there first.")
     return path

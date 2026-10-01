@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "blockReadsOutsideWorkingDirectories": true,
+    "deny": [
+      "Bash",
+      "Edit(./Deals/**)",
+      "Edit(./Templates/**)",
+      "Edit(./Market/data/**)",
+      "Edit(./Market/watchlist.json)",
+      "Edit(./CLAUDE.md)"
+    ]
+  }
+}

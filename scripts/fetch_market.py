@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-Daily market data collector for the Business vault.
+Daily market data collector for the agent folder in the vault.
 
 Pulls official/open data only (no portal scraping):
   - Banco Central SGS: Selic target, IPCA monthly, average auto-loan rate (individuals)
   - Banco Central Focus survey: market median expectation for the Selic
   - FIPE reference prices via BrasilAPI, for the codes listed in watchlist.json
 
-Reads (inside the vault, which is outside this repo):
-  Business/Market/watchlist.json     FIPE codes of the vehicles you track
+Reads (inside the agent folder in the vault, which is outside this repo):
+  Market/watchlist.json     FIPE codes of the vehicles you track
 
-Writes (inside the vault):
-  Business/Market/data/history.csv   append-only, one row per data point per run
-  Business/Market/data/latest.md     human-readable snapshot, overwritten each run
+Writes (inside the agent folder):
+  Market/data/history.csv   append-only, one row per data point per run
+  Market/data/latest.md     human-readable snapshot, overwritten each run
 
 Standard library only, so nothing to pip install.
 Run from anywhere: python3 scripts/fetch_market.py
@@ -24,7 +24,7 @@ import urllib.parse
 import urllib.request
 from datetime import date, datetime
 
-from common import vault_dir
+from common import agent_dir
 
 # Banco Central SGS series codes
 SGS_SERIES = {
@@ -99,11 +99,11 @@ def fetch_fipe(code, model_year):
 # ---------- main -------------------------------------------------------------
 
 def main():
-    vault = vault_dir()
-    data_dir = vault / "Business" / "Market" / "data"
+    base = agent_dir()
+    data_dir = base / "Market" / "data"
     history = data_dir / "history.csv"
     latest = data_dir / "latest.md"
-    watchlist = vault / "Business" / "Market" / "watchlist.json"
+    watchlist = base / "Market" / "watchlist.json"
     data_dir.mkdir(parents=True, exist_ok=True)
     run_date = date.today().isoformat()
     points, errors = [], []
@@ -127,7 +127,7 @@ def main():
         watch = json.loads(watchlist.read_text(encoding="utf-8")).get("vehicles", [])
     except FileNotFoundError:
         watch = []
-        errors.append("watchlist not found at Business/Market/watchlist.json")
+        errors.append("watchlist not found at Market/watchlist.json")
     for v in watch:
         code = v.get("fipe_code", "")
         if not code or code.startswith("000000"):
