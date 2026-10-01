@@ -2,7 +2,7 @@
 """
 Send a short, privacy-safe update to Telegram after an agent run.
 
-  python3 scripts/notify_telegram.py brief            TL;DR of the newest weekly brief
+  python3 scripts/notify_telegram.py brief            'Resumo' section of the newest weekly brief
   python3 scripts/notify_telegram.py research         newest entry of Research/log.md
   python3 scripts/notify_telegram.py --failed JOB     report that a run failed
   python3 scripts/notify_telegram.py --test           send a test message
@@ -10,6 +10,7 @@ Send a short, privacy-safe update to Telegram after an agent run.
 
 Only these short sections are sent. The prompts keep costs, margins and prices out
 of them, so financial details never leave your machine through Telegram.
+Messages are in Portuguese because they go to the owner.
 
 Needs TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env. Standard library only.
 """
@@ -22,6 +23,12 @@ import urllib.request
 from common import agent_dir, load_env
 
 MAX_LEN = 3800  # Telegram caps messages at 4096 characters
+
+# Heading of the phone-safe section in a brief. Briefs written before the switch
+# to Portuguese used "TL;DR", so it stays as a fallback.
+SUMMARY_HEADINGS = ("Resumo", "TL;DR")
+
+JOB_LABELS = {"research": "pesquisa", "brief": "brief semanal"}
 
 
 def newest_brief(briefs_dir):
@@ -63,23 +70,37 @@ def count_fetch_errors(latest_md_text):
     return sum(1 for line in section.splitlines() if line.startswith("- "))
 
 
+def brief_summary(brief_text):
+    """Return the phone-safe summary section of a brief, or '' if absent."""
+    for heading in SUMMARY_HEADINGS:
+        section = extract_section(brief_text, heading)
+        if section:
+            return section
+    return ""
+
+
 def cap(msg):
     if len(msg) > MAX_LEN:
-        msg = msg[: MAX_LEN - 20].rstrip() + "\n...(truncated)"
+        msg = msg[: MAX_LEN - 20].rstrip() + "\n...(cortado)"
     return msg
 
 
 def build_brief_message(brief_name, brief_text, fetch_errors):
-    tldr = extract_section(brief_text, "TL;DR") or "(no TL;DR section found, open the brief)"
-    msg = f"Weekly brief {brief_name}\n\n{tldr}"
+    summary = brief_summary(brief_text) or "(seção Resumo não encontrada, abra o brief)"
+    msg = f"Brief semanal {brief_name}\n\n{summary}"
     if fetch_errors:
-        msg += f"\n\n{fetch_errors} data fetch error(s), see the brief."
+        msg += f"\n\n{fetch_errors} erro(s) na coleta de dados, veja o brief."
     return cap(msg)
 
 
 def build_research_message(log_text):
-    entry = last_section(log_text) or "(research log is empty)"
-    return cap(f"Research run\n\n{entry}")
+    entry = last_section(log_text) or "(o log de pesquisa está vazio)"
+    return cap(f"Pesquisa\n\n{entry}")
+
+
+def build_failed_message(job):
+    label = JOB_LABELS.get(job, job)
+    return f"FALHA na execução do agente ({label}). Veja .last_{job}.log na pasta do agente no servidor."
 
 
 def send(text):
@@ -101,11 +122,11 @@ def send(text):
 
 def compose(args):
     if "--test" in args:
-        return "Test message from vault-market-agent. If you see this, notifications work."
+        return "Mensagem de teste do vault-market-agent. Se você está lendo isto, as notificações funcionam."
     if "--failed" in args:
         i = args.index("--failed")
         job = args[i + 1] if i + 1 < len(args) else "agent"
-        return f"Agent {job} run FAILED. Check .last_{job}.log in the agent folder on the server."
+        return build_failed_message(job)
 
     base = agent_dir()
     if "brief" in args:

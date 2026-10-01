@@ -12,9 +12,17 @@ import fetch_market  # noqa: E402
 import notify_telegram  # noqa: E402
 
 BRIEF = """# Brief
+## Resumo
+- Selic estável; crédito ainda apertado.
+- 2026-10 primeiro veículo: revisar preço.
+
+## O que mudou na semana
+Algo longo aqui.
+"""
+
+OLD_BRIEF = """# Brief
 ## TL;DR
 - Selic unchanged; credit still tight.
-- 2026-10 first vehicle: review price.
 
 ## What changed this week
 Something long here.
@@ -33,10 +41,25 @@ class ToFloatTests(unittest.TestCase):
 
 
 class SectionTests(unittest.TestCase):
-    def test_extracts_tldr_only(self):
-        tldr = notify_telegram.extract_section(BRIEF, "TL;DR")
-        self.assertIn("review price", tldr)
-        self.assertNotIn("Something long", tldr)
+    def test_extracts_resumo_only(self):
+        summary = notify_telegram.extract_section(BRIEF, "Resumo")
+        self.assertIn("revisar preço", summary)
+        self.assertNotIn("Algo longo", summary)
+
+    def test_brief_message_uses_resumo(self):
+        msg = notify_telegram.build_brief_message("2026-10-05", BRIEF, 0)
+        self.assertIn("Brief semanal 2026-10-05", msg)
+        self.assertIn("revisar preço", msg)
+        self.assertNotIn("Algo longo", msg)
+
+    def test_brief_message_falls_back_to_tldr(self):
+        msg = notify_telegram.build_brief_message("2026-09-28", OLD_BRIEF, 0)
+        self.assertIn("Selic unchanged", msg)
+        self.assertNotIn("Something long", msg)
+
+    def test_brief_message_without_summary(self):
+        msg = notify_telegram.build_brief_message("2026-10-05", "# Brief\n## Outra\nx\n", 0)
+        self.assertIn("Resumo não encontrada", msg)
 
     def test_missing_section_is_empty(self):
         self.assertEqual(notify_telegram.extract_section(BRIEF, "Nope"), "")
@@ -46,22 +69,28 @@ class SectionTests(unittest.TestCase):
         self.assertEqual(notify_telegram.count_fetch_errors(text), 2)
 
     def test_message_is_capped(self):
-        msg = notify_telegram.build_brief_message("2026-10-05", "## TL;DR\n" + "x" * 10000, 0)
+        msg = notify_telegram.build_brief_message("2026-10-05", "## Resumo\n" + "x" * 10000, 0)
         self.assertLessEqual(len(msg), notify_telegram.MAX_LEN)
 
     def test_message_mentions_errors(self):
         msg = notify_telegram.build_brief_message("2026-10-05", BRIEF, 3)
-        self.assertIn("3 data fetch error", msg)
+        self.assertIn("3 erro(s) na coleta", msg)
 
     def test_research_message_uses_last_entry(self):
-        log = "# Research log\n\n## 2026-10-03\n- Topics: a\n\n## 2026-10-06\n- Topics: b\n"
+        log = "# Log de pesquisa\n\n## 2026-10-03\n- Temas: a\n\n## 2026-10-06\n- Temas: b\n"
         msg = notify_telegram.build_research_message(log)
+        self.assertTrue(msg.startswith("Pesquisa"))
         self.assertIn("2026-10-06", msg)
-        self.assertIn("Topics: b", msg)
-        self.assertNotIn("Topics: a", msg)
+        self.assertIn("Temas: b", msg)
+        self.assertNotIn("Temas: a", msg)
 
     def test_research_message_empty_log(self):
-        self.assertIn("empty", notify_telegram.build_research_message("# Research log\n"))
+        self.assertIn("vazio", notify_telegram.build_research_message("# Log de pesquisa\n"))
+
+    def test_failed_message_names_job_and_log(self):
+        msg = notify_telegram.build_failed_message("research")
+        self.assertIn("pesquisa", msg)
+        self.assertIn(".last_research.log", msg)
 
 
 class FilesTests(unittest.TestCase):

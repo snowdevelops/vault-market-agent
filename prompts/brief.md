@@ -1,40 +1,40 @@
-Write this week's brief. Your rules are in CLAUDE.md; follow them strictly.
+Escreva o brief desta semana, em português do Brasil. Suas regras estão em CLAUDE.md; siga-as à risca.
 
-Read, in this order:
-1. Market/data/latest.md and the last 12 weeks of Market/data/history.csv
-2. Knowledge/_index.md, then the knowledge notes relevant to anything that changed
-3. Every note in Deals/ whose `status` is not `sold` or `dropped`
+Leia, nesta ordem:
+1. Market/data/latest.md e as últimas 12 semanas de Market/data/history.csv
+2. Knowledge/_index.md e, depois, as notas de conhecimento ligadas a qualquer coisa que tenha mudado
+3. Todas as notas em Deals/ cujo `status` não seja `sold` nem `dropped`
 4. Market/hypotheses.md
-5. The most recent file in Briefs/, if any, so you don't repeat yourself
+5. O arquivo mais recente em Briefs/, se houver, para não se repetir
 
-Then research the last 7 days on the web (at most 15 searches):
-- Brazilian used-vehicle market (Fenauto, Fenabrave monthly releases)
-- Vehicle credit: rates, approvals, down payments, defaults
-- Chinese and electric vehicle prices in Brazil and their effect on used combustion cars
-- Anything specific to Uberlândia or the Triângulo Mineiro auto market
-- The models in the active deals (recalls, new-model launches, price changes)
+Depois pesquise na web os últimos 7 dias (no máximo 15 buscas):
+- Mercado brasileiro de veículos usados (divulgações mensais da Fenauto e da Fenabrave)
+- Crédito para veículos: juros, aprovações, entrada, inadimplência
+- Preços de carros chineses e elétricos no Brasil e o efeito nos usados a combustão
+- Qualquer coisa específica do mercado de carros de Uberlândia ou do Triângulo Mineiro
+- Os modelos dos negócios ativos (recalls, lançamentos de novos modelos, mudanças de preço)
 
-Write Briefs/YYYY-MM-DD.md (today's date) with these sections, in this order:
+Escreva Briefs/AAAA-MM-DD.md (data de hoje) com estas seções, nesta ordem e com estes títulos exatos:
 
-## TL;DR
-At most 5 short lines: the most important change and what needs attention in each active deal (refer to deals by note name only). This section is sent to the owner's phone, so it must NOT contain any purchase price, cost, margin, floor price, list price or profit. Write "review price" or "hold", never the numbers.
+## Resumo
+No máximo 5 linhas curtas: a mudança mais importante e o que precisa de atenção em cada negócio ativo (cite os negócios só pelo nome da nota). Esta seção é enviada para o celular do dono, então NÃO pode conter preço de compra, custo, margem, preço mínimo, preço de anúncio nem lucro. Escreva "revisar preço" ou "manter", nunca os números.
 
-## What changed this week
-Only real changes, each with its source link. If nothing important changed, say so in one line.
+## O que mudou na semana
+Só mudanças reais, cada uma com o link da fonte. Se nada importante mudou, diga isso em uma linha.
 
-## Active deals
-For each deal: days since listing vs `max_days_listed`, current list price vs FIPE, lead activity, and a recommendation (hold, review price, or change channel) with the reasoning in two or three sentences, using the knowledge notes. Show the numbers you used. If there are no active deals, say so in one line.
+## Negócios ativos
+Para cada negócio: dias desde o anúncio comparados com `max_days_listed`, preço de anúncio atual comparado com a FIPE, movimento de contatos e uma recomendação (manter, revisar preço ou mudar de canal) com o raciocínio em duas ou três frases, usando as notas de conhecimento. Mostre os números que usou. Se não houver negócios ativos, diga isso em uma linha.
 
-## Hypotheses
-For each hypothesis, say whether this week's evidence supports, weakens, or doesn't touch it. Append dated rows to the evidence table in Market/hypotheses.md.
+## Hipóteses
+Para cada hipótese, diga se as evidências da semana a reforçam, a enfraquecem ou não a afetam. Acrescente linhas datadas à tabela de evidências no final de Market/hypotheses.md, mantendo as colunas que ela já tem.
 
-## Knowledge updates needed
-Knowledge notes this week's news made outdated. Update small facts directly in those notes (with source and date); list bigger gaps here for the next research run.
+## Atualizações de conhecimento
+Notas de conhecimento que as notícias da semana deixaram desatualizadas. Corrija fatos pequenos direto nessas notas (com fonte e data); liste aqui as lacunas maiores para a próxima sessão de pesquisa.
 
-## Data problems
-Fetch errors from Market/data/latest.md and anything missing or inconsistent in the deal notes.
+## Problemas nos dados
+Erros de coleta da seção "Fetch errors" de Market/data/latest.md e qualquer coisa faltando ou inconsistente nas notas de negócios.
 
-## Questions for the owner
-At most three, only ones whose answers would change a recommendation.
+## Perguntas para o dono
+No máximo três, só as que mudariam uma recomendação se fossem respondidas.
 
-Keep the brief under 700 words.
+Mantenha o brief com menos de 700 palavras.
