@@ -2,6 +2,8 @@
 # Run one agent job inside the agent folder of the vault.
 #   run_agent.sh research   deepen the knowledge base (Knowledge/)
 #   run_agent.sh brief      refresh data, then write the weekly brief (Briefs/)
+#   run_agent.sh review     review each sold deal without Reviews/<deal>.md and update
+#                           Knowledge/playbook.md; exits without calling claude if none
 # Paths and secrets come from .env (gitignored). Schedule with cron.
 #
 # Only one job runs at a time: a second one waits for the lock up to 30 minutes
@@ -11,8 +13,8 @@ set -euo pipefail
 
 JOB="${1:-}"
 case "$JOB" in
-  brief|research) ;;
-  *) echo "usage: $0 brief|research" >&2; exit 2 ;;
+  brief|research|review) ;;
+  *) echo "usage: $0 brief|research|review" >&2; exit 2 ;;
 esac
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -34,6 +36,25 @@ if [[ ! -d "$WORK" ]]; then
   exit 1
 fi
 
+# Sold deals still waiting for a review, as note paths relative to the agent folder.
+PENDING=()
+pending_reviews() {
+  local out
+  out="$(python3 "$REPO_DIR/scripts/deals.py" pending-reviews)"
+  PENDING=()
+  if [[ -n "$out" ]]; then mapfile -t PENDING <<< "$out"; fi
+}
+
+# The daily review run costs nothing when there is nothing to review: no lock,
+# no status entry, no claude, no message.
+if [[ "$JOB" == "review" ]]; then
+  pending_reviews
+  if (( ${#PENDING[@]} == 0 )); then
+    echo "$(date '+%F %T') review: no sold deal without a review; nothing to do"
+    exit 0
+  fi
+fi
+
 notify() {
   if [[ -n "${TELEGRAM_BOT_TOKEN:-}" && -z "${AGENT_SKIP_NOTIFY:-}" ]]; then
     python3 "$REPO_DIR/scripts/notify_telegram.py" "$@" || echo "telegram notify failed"
@@ -51,6 +72,13 @@ if ! flock -w "$LOCK_WAIT" 9; then
   notify --busy "$JOB"
   exit 75
 fi
+if [[ "$JOB" == "review" ]]; then
+  pending_reviews  # again: a run that held the lock may have written some meanwhile
+  if (( ${#PENDING[@]} == 0 )); then
+    echo "$(date '+%F %T') review: no sold deal without a review; nothing to do"
+    exit 0
+  fi
+fi
 python3 "$REPO_DIR/scripts/status.py" start "$JOB" "$$" || echo "could not record job status" >&2
 trap 'python3 "$REPO_DIR/scripts/status.py" finish "$JOB" "$?" || echo "could not record job status" >&2' EXIT
 
@@ -63,18 +91,41 @@ fi
 # file lives in this repo, outside the vault, so the agent cannot change it.
 # 9>&- keeps the lock out of Claude's child processes, so it is released when
 # this script exits, and env -u keeps the Telegram token out of its environment.
-failed=0
-cd "$WORK"
-env -u TELEGRAM_BOT_TOKEN "$CLAUDE_BIN" -p "$(cat "$REPO_DIR/prompts/$JOB.md")" \
-  --settings "$REPO_DIR/config/agent-settings.json" \
-  --permission-mode acceptEdits \
-  --allowedTools "Read,Glob,Grep,WebSearch,WebFetch" \
-  --output-format stream-json --verbose \
-  > "$STREAM" 2> "$LOG" 9>&- || failed=1
+# A stream with no result, or one that ended in an error, also counts as failed.
+run_claude() {
+  local rc=0
+  env -u TELEGRAM_BOT_TOKEN "$CLAUDE_BIN" -p "$1" \
+    --settings "$REPO_DIR/config/agent-settings.json" \
+    --permission-mode acceptEdits \
+    --allowedTools "Read,Glob,Grep,WebSearch,WebFetch" \
+    --output-format stream-json --verbose \
+    > "$STREAM" 2>> "$LOG" 9>&- || rc=1
+  # Append the outcome and final answer to the short log.
+  python3 "$REPO_DIR/scripts/watch_agent.py" --summary "$STREAM" >> "$LOG" 2>&1 || rc=1
+  return $rc
+}
 
-# Append the outcome and final answer to the short log. A stream with no result,
-# or one that ended in an error, also counts as a failed run.
-python3 "$REPO_DIR/scripts/watch_agent.py" --summary "$STREAM" >> "$LOG" 2>&1 || failed=1
+failed=0
+REVIEWED=()
+: > "$LOG"
+cd "$WORK"
+if [[ "$JOB" == "review" ]]; then
+  # One run per deal; the stream file shows the deal being reviewed now.
+  for note in "${PENDING[@]}"; do
+    deal="$(basename "$note" .md)"
+    echo "== $note" >> "$LOG"
+    prompt="$(cat "$REPO_DIR/prompts/review.md")"$'\n\n'"Negócio a revisar: $note"$'\n'"Escreva a revisão em: Reviews/$deal.md"
+    run_claude "$prompt" || failed=1
+    if [[ -f "Reviews/$deal.md" ]]; then
+      REVIEWED+=("$deal")
+    else
+      echo "Reviews/$deal.md was not written" >> "$LOG"
+      failed=1
+    fi
+  done
+else
+  run_claude "$(cat "$REPO_DIR/prompts/$JOB.md")" || failed=1
+fi
 
 # Local history only. The vault repo has no remote, so nothing leaves this machine.
 # The run logs are left out: the stream is large and changes on every run.
@@ -85,6 +136,8 @@ fi
 
 if [[ $failed -eq 1 ]]; then
   notify --failed "$JOB"
+elif [[ "$JOB" == "review" ]]; then
+  notify review "${REVIEWED[@]}"
 else
   notify "$JOB"
 fi

@@ -3,8 +3,9 @@
 Helpers for the owner's deal notes in Deals/ (shared by the bot, the capture
 commands and the review job).
 
-  python3 scripts/deals.py pending-reviews    sold deals without Reviews/<deal>.md,
-                                              one name per line (used by run_agent.sh)
+  python3 scripts/deals.py pending-reviews    sold deals without Reviews/<deal>.md, one
+                                              note path per line, relative to the agent
+                                              folder (used by run_agent.sh review)
 
 Deal notes are Markdown with a YAML-like frontmatter (see
 vault-template/agent/Templates/vehicle-deal.md). Only simple `key: value` lines are
@@ -190,9 +191,9 @@ def open_deals(deals_dir, today=None):
 
 
 def pending_reviews(work):
-    """Names of sold deals that have no Reviews/<name>.md yet."""
+    """Notes of sold deals that have no Reviews/<note name>.md yet."""
     reviews = work / "Reviews"
-    return [p.stem for p in deal_files(work / "Deals")
+    return [p for p in deal_files(work / "Deals")
             if deal_info(p).get("status", "").strip().lower() == "sold"
             and not (reviews / f"{p.stem}.md").exists()]
 
@@ -200,8 +201,9 @@ def pending_reviews(work):
 def main(argv):
     if argv == ["pending-reviews"]:
         from common import agent_dir
-        for name in pending_reviews(agent_dir()):
-            print(name)
+        work = agent_dir()
+        for path in pending_reviews(work):
+            print(path.relative_to(work).as_posix())
         return 0
     raise SystemExit(__doc__)
 
