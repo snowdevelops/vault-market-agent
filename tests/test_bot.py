@@ -340,6 +340,157 @@ class RunQuestionTests(unittest.TestCase):
             self.assertEqual(result, "error")
 
 
+class CaptureCommandTests(unittest.TestCase):
+    """Capture commands end to end on a temp agent folder; nothing calls claude."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.work = Path(self.tmp.name) / "Business"
+        (self.work / "Deals").mkdir(parents=True)
+        template = (REPO / "vault-template" / "agent" / "Templates" / "vehicle-deal.md").read_text(encoding="utf-8")
+        self.note = self.work / "Deals" / "onix-2019.md"
+        self.note.write_text(template.replace("status: acquiring", "status: listed")
+                             .replace("listed_on:\n", "listed_on: 2026-09-20\n"), encoding="utf-8")
+        self.api = FakeApi()
+        self.bot = bot.Bot(OWNER, self.work, "claude", state_path=Path(self.tmp.name) / "state" / "bot.json",
+                           api=self.api)
+        self.jobs = []
+        self.bot.start_job = lambda job, message_id: self.jobs.append(job)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def send(self, text, update_id=1):
+        self.bot.handle_update(update(text, update_id=update_id))
+        return self.api.sent()[-1]
+
+    def test_new_commands_parse(self):
+        for text, name in [("/comp a", "comp"), ("/lead a", "lead"), ("/preco a", "preco"), ("/preço a", "preco"),
+                           ("/venda a", "venda"), ("/nota a", "nota"), ("/negocios", "negocios"),
+                           ("/negócios", "negocios"), ("/desfazer", "desfazer")]:
+            self.assertEqual(bot.parse_command(text), ("command", name))
+
+    def test_command_args(self):
+        self.assertEqual(bot.command_args("/comp  Onix ; 2019 "), "Onix ; 2019")
+        self.assertEqual(bot.command_args("/comp@MeuBot a;b"), "a;b")
+        self.assertEqual(bot.command_args("/desfazer"), "")
+
+    def test_help_has_an_example_for_each_capture(self):
+        for name in bot.CAPTURE_COMMANDS:
+            self.assertIn(f"ex.: /{name} ", bot.HELP)
+        self.assertIn("ex.: /desfazer", bot.HELP)
+
+    def test_comp_replies_with_parsed_values(self):
+        reply = self.send("/comp Onix LT ; 2019 ; 65mil ; 72,9k ; OLX ; único dono")
+        self.assertIn("R$ 72.900", reply)
+        self.assertIn("65.000 km", reply)
+        self.assertIn("/desfazer", reply)
+        self.assertIn("72900", (self.work / "Market" / "comparables.csv").read_text(encoding="utf-8"))
+
+    def test_bad_input_is_explained_and_nothing_written(self):
+        reply = self.send("/comp Onix ; 2019")
+        self.assertIn("Falta", reply)
+        self.assertIn("ex.: /comp", reply)
+        self.assertFalse((self.work / "Market").exists())
+
+    def test_ambiguous_deal_lists_candidates(self):
+        (self.work / "Deals" / "onix-2020.md").write_text("---\nstatus: listed\n---\n")
+        reply = self.send("/preco onix ; 70000 ; x")
+        self.assertIn("onix-2019", reply)
+        self.assertIn("onix-2020", reply)
+        self.assertIn("Nada foi gravado", reply)
+
+    def test_venda_starts_review_job(self):
+        self.send("/venda onix ; 70.000 ; OLX")
+        self.assertEqual(self.jobs, ["review"])
+        self.assertIn("onix-2019", self.bot.review_requests)
+        self.assertTrue(any("Venda registrada" in t for t in self.api.sent()))
+        self.assertIn("Revisão da venda iniciada", self.api.sent()[-1])
+
+    def test_failed_venda_starts_nothing(self):
+        self.send("/venda onix ; muito ; OLX")
+        self.assertEqual(self.jobs, [])
+
+    def test_desfazer_reverts_last_capture(self):
+        before = self.note.read_text(encoding="utf-8")
+        self.send("/lead onix ; OLX ; visita")
+        self.assertNotEqual(self.note.read_text(encoding="utf-8"), before)
+        reply = self.send("/desfazer", update_id=2)
+        self.assertIn("Desfeito", reply)
+        self.assertEqual(self.note.read_text(encoding="utf-8"), before)
+
+    def test_negocios(self):
+        reply = self.send("/negocios")
+        self.assertIn("onix-2019: listed,", reply)
+        self.assertIn("dias anunciado (limite 45)", reply)
+
+    def test_capture_content_is_not_logged(self):
+        with self.assertLogs("telegram_bot", "INFO") as logs:
+            self.send("/nota segredo do leilão")
+        self.assertNotIn("segredo", "\n".join(logs.output))
+
+
+class ReviewWorkerTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.work = Path(self.tmp.name)
+        self.api = FakeApi()
+        self.bot = bot.Bot(OWNER, self.work, "claude", state_path=self.work / "bot.json", api=self.api)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_reply_names_reviews_only(self):
+        def fake_run(job):
+            (self.work / "Reviews").mkdir(exist_ok=True)
+            (self.work / "Reviews" / "onix-2019.md").write_text("Preço final R$ 70.000")
+            return 0
+        self.bot.run_agent_job = fake_run
+        self.bot.review_requests = {"onix-2019"}
+        self.bot.review_worker(1)
+        self.assertEqual(len(self.api.sent()), 1)
+        self.assertIn("Reviews/onix-2019.md", self.api.sent()[0])
+        self.assertNotIn("70.000", self.api.sent()[0])
+        self.assertEqual(self.bot.review_requests, set())
+
+    def test_sale_captured_during_a_run_gets_another_run(self):
+        runs = []
+
+        def fake_run(job):
+            runs.append(job)
+            (self.work / "Reviews").mkdir(exist_ok=True)
+            if len(runs) == 1:
+                (self.work / "Reviews" / "a.md").write_text("x")
+                self.bot.review_requests.add("b")  # /venda arrived while the first run was going
+            else:
+                (self.work / "Reviews" / "b.md").write_text("x")
+            return 0
+        self.bot.run_agent_job = fake_run
+        self.bot.review_requests = {"a"}
+        self.bot.review_worker(1)
+        self.assertEqual(runs, ["review", "review"])
+        self.assertEqual(len(self.api.sent()), 2)
+
+    def test_failed_and_busy_runs(self):
+        self.bot.run_agent_job = lambda job: 1
+        self.bot.review_requests = {"a"}
+        self.bot.review_worker(1)
+        self.assertIn("FALHA", self.api.sent()[-1])
+        self.assertEqual(self.bot.review_requests, set())
+        self.bot.run_agent_job = lambda job: bot.EXIT_LOCK_BUSY
+        self.bot.review_requests = {"a"}
+        self.bot.review_worker(1)
+        self.assertIn("cancelada", self.api.sent()[-1])
+
+    def test_gives_up_after_a_few_rounds(self):
+        runs = []
+        self.bot.run_agent_job = lambda job: runs.append(job) or 0
+        self.bot.review_requests = {"never-written"}
+        self.bot.review_worker(1)
+        self.assertEqual(len(runs), bot.REVIEW_ROUNDS)
+        self.assertIn("FALHA", self.api.sent()[-1])
+
+
 class ServiceFileTests(unittest.TestCase):
     def test_user_service_restarts_on_failure_only(self):
         unit = (REPO / "deploy" / "vault-agent-bot.service").read_text()

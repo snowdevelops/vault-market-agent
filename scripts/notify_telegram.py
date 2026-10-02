@@ -4,6 +4,7 @@ Send a short, privacy-safe update to Telegram after an agent run.
 
   python3 scripts/notify_telegram.py brief            'Resumo' section of the newest weekly brief
   python3 scripts/notify_telegram.py research         newest entry of Research/log.md
+  python3 scripts/notify_telegram.py review DEAL...   names of the sale reviews just written
   python3 scripts/notify_telegram.py --failed JOB     report that a run failed
   python3 scripts/notify_telegram.py --busy JOB       report that a run was skipped (lock)
   python3 scripts/notify_telegram.py --test           send a test message
@@ -30,7 +31,7 @@ MAX_LEN = 3800  # Telegram caps messages at 4096 characters
 # to Portuguese used "TL;DR", so it stays as a fallback.
 SUMMARY_HEADINGS = ("Resumo", "TL;DR")
 
-JOB_LABELS = {"research": "pesquisa", "brief": "brief semanal"}
+JOB_LABELS = {"research": "pesquisa", "brief": "brief semanal", "review": "revisão de venda"}
 
 
 def newest_brief(briefs_dir):
@@ -100,6 +101,13 @@ def build_research_message(log_text):
     return cap(f"Pesquisa\n\n{entry}")
 
 
+def build_review_message(deals):
+    """Reviews contain prices, so only their file names go to the phone."""
+    names = "\n".join(f"- Reviews/{d}.md" for d in deals)
+    return cap(f"Revisão de venda pronta\n\n{names}\n\n"
+               "As lições entraram em Knowledge/playbook.md. Abra as notas no Obsidian para ler.")
+
+
 def build_failed_message(job):
     label = JOB_LABELS.get(job, job)
     return f"FALHA na execução do agente ({label}). Veja .last_{job}.log na pasta do agente no servidor."
@@ -150,6 +158,8 @@ def compose(args):
         job = args[i + 1] if i + 1 < len(args) else "agent"
         return build_failed_message(job)
 
+    if args and args[0] == "review":
+        return build_review_message([a for a in args[1:] if a != "--dry-run"])
     base = agent_dir()
     if "brief" in args:
         brief = newest_brief(base / "Briefs")

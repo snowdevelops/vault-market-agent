@@ -9,6 +9,10 @@ Commands (replies are in Portuguese, for the owner):
   /ultimo     newest entry of Research/log.md
   /resumo     'Resumo' section of the newest brief
   /pesquisar  start a research run now (waits for the job lock like cron runs do)
+  /comp /lead /preco /venda /nota
+              capture field data into the agent folder (scripts/capture.py, no LLM)
+  /negocios   open deals and days listed
+  /desfazer   undo the most recent capture
   /ajuda      list the commands
   any other text is a question for the agent
 
@@ -20,10 +24,13 @@ Safety:
     and read-only tools. The question goes in on stdin, never through a shell or as
     a command-line argument.
   - One question at a time, at most BOT_MAX_QUESTIONS_PER_HOUR (default 20).
+  - Captures are parsed and written by plain Python; message text never reaches a
+    shell. /venda then starts the review job (run_agent.sh review).
   - The update offset is saved before an update is handled, so a message that
     crashes the bot is not handled again after the restart.
 
-State lives in .state/bot.json in this repository (gitignored). Standard library only.
+State lives in .state/bot.json and the undo journal in .state/captures.json, both in
+this repository (gitignored). Standard library only.
 """
 import json
 import logging
@@ -38,9 +45,11 @@ import time
 from datetime import date
 from pathlib import Path
 
+import capture
+import deals
 import notify_telegram as tg
 import status
-from common import REPO_DIR, agent_dir, load_env
+from common import REPO_DIR, agent_dir, load_env, vault_dir
 
 STATE_FILE = status.STATE_DIR / "bot.json"
 SETTINGS_FILE = REPO_DIR / "config" / "agent-settings.json"
@@ -58,15 +67,34 @@ DENIED_TOOLS = "Edit,Write,NotebookEdit,Bash"
 EXIT_CONFIG = 78             # systemd does not restart on this code (see deploy/)
 EXIT_LOCK_BUSY = 75          # run_agent.sh: another job held the lock too long
 
-COMMANDS = ("status", "ultimo", "resumo", "pesquisar", "ajuda")
-ALIASES = {"start": "ajuda", "help": "ajuda", "último": "ultimo"}
+CAPTURE_COMMANDS = ("comp", "lead", "preco", "venda", "nota")
+COMMANDS = ("status", "ultimo", "resumo", "pesquisar", "negocios", "desfazer", "ajuda") + CAPTURE_COMMANDS
+ALIASES = {"start": "ajuda", "help": "ajuda", "último": "ultimo", "negócios": "negocios", "preço": "preco"}
+REVIEW_ROUNDS = 3            # review runs per /venda burst before giving up on a missing review
 
 HELP = """Comandos:
 /status - trabalho em execução e a última execução de cada um
 /ultimo - a entrada mais recente do log de pesquisa
 /resumo - o Resumo do brief semanal mais recente
 /pesquisar - começar uma sessão de pesquisa agora
+/negocios - negócios ativos e dias anunciados
 /ajuda - esta lista
+
+Registrar dados de campo (separe os campos com ; e os entre [ ] são opcionais). Não usa o Claude:
+/comp modelo ; ano ; km ; preço ; canal ; [obs] - anúncio comparável que você viu
+  ex.: /comp Onix LT 1.0 ; 2019 ; 65mil ; 72,9k ; OLX ; único dono
+/lead negócio ; canal ; tipo ; [valor da oferta] ; [obs] - contato num negócio (pergunta, visita ou oferta)
+  ex.: /lead onix-2019 ; Marketplace ; oferta ; 68 mil ; quer pagar à vista
+/preco negócio ; novo preço ; motivo - mudança de preço
+  ex.: /preco onix-2019 ; 71.500 ; dia 15 sem visitas
+/venda negócio ; preço final ; canal ; [data] - marca como vendido e começa a revisão da venda
+  ex.: /venda onix-2019 ; R$ 70.000,00 ; OLX ; 02/10/2026
+/nota texto - o que você ouviu em lojas, leilões ou de outros revendedores
+  ex.: /nota Leilão de sexta teve muitos Onix 2019 com sinistro
+/desfazer - desfaz a última captura
+  ex.: /desfazer
+
+Os valores passam pelo Telegram, que não tem criptografia de ponta a ponta.
 
 Qualquer outra mensagem é uma pergunta para o agente. Ele só lê e pesquisa, nunca altera nada. Respostas podem levar alguns minutos."""
 
@@ -89,6 +117,27 @@ def parse_command(text):
     if name in COMMANDS:
         return "command", name
     return "unknown", word
+
+
+def command_args(text):
+    """Text after the command word, e.g. '/comp a ; b' -> 'a ; b'."""
+    parts = (text or "").strip().split(maxsplit=1)
+    return parts[1].strip() if len(parts) > 1 else ""
+
+
+def format_open_deals(items):
+    if not items:
+        return "Nenhum negócio ativo em Deals/."
+    lines = [f"Negócios ativos ({len(items)}):"]
+    for d in items:
+        if d["days_listed"] is None:
+            when = "ainda não anunciado"
+        else:
+            when = f"{d['days_listed']} dias anunciado"
+            if d["max_days_listed"]:
+                when += f" (limite {d['max_days_listed']})"
+        lines.append(f"- {d['name']}: {d['status']}, {when}")
+    return "\n".join(lines)
 
 
 def is_allowed(update, chat_id):
@@ -229,7 +278,7 @@ def load_bot_state(path=STATE_FILE):
 
 class Bot:
     def __init__(self, chat_id, work, claude_bin, max_per_hour=DEFAULT_MAX_PER_HOUR,
-                 state_path=STATE_FILE, api=tg.api, token=""):
+                 state_path=STATE_FILE, api=tg.api, token="", vault=None):
         self.chat_id = str(chat_id).strip()
         self.work = Path(work)
         self.claude_bin = claude_bin
@@ -242,7 +291,10 @@ class Bot:
         self.questions = queue.Queue()
         self.pending = 0                 # questions queued or being answered
         self.lock = threading.Lock()
-        self.research_thread = None
+        self.job_threads = {}            # job name -> thread started from Telegram
+        self.review_requests = set()     # deals sold via /venda waiting for their review
+        # The undo journal sits next to the bot state (.state/ in production).
+        self.capture = capture.Capture(work, self.state_path.parent / "captures.json", vault=vault)
 
     # -- Telegram output
 
@@ -282,7 +334,10 @@ class Bot:
         kind, value = parse_command(text)
         if kind == "command":
             log.info("command /%s", value)
-            getattr(self, f"cmd_{value}")(message_id)
+            if value in CAPTURE_COMMANDS:
+                self.run_capture(value, command_args(text), message_id)
+            else:
+                getattr(self, f"cmd_{value}")(message_id)
         elif kind == "unknown":
             self.reply(f"Comando desconhecido: {value}\n\n{HELP}", message_id)
         elif kind == "question":
@@ -332,8 +387,38 @@ class Bot:
         summary = tg.brief_summary(brief.read_text(encoding="utf-8"))
         self.reply(f"Resumo do brief {brief.stem}\n\n{summary or '(seção Resumo não encontrada)'}", message_id)
 
+    def cmd_negocios(self, message_id):
+        self.reply(format_open_deals(deals.open_deals(self.work / "Deals")), message_id)
+
+    def cmd_desfazer(self, message_id):
+        self.reply(self.capture.undo(), message_id)
+
+    def run_capture(self, name, args, message_id):
+        """Parse and write one capture. Bad input is answered, nothing is written."""
+        try:
+            result = getattr(self.capture, name)(args)
+        except capture.CaptureError as e:
+            self.reply(str(e), message_id)
+            return
+        log.info("captured /%s", name)  # never the content
+        if name == "venda":
+            deal, text = result
+            self.reply(text, message_id)
+            self.request_review(deal, message_id)
+        else:
+            self.reply(result, message_id)
+
+    def job_running(self, job):
+        thread = self.job_threads.get(job)
+        return thread is not None and thread.is_alive()
+
+    def start_job(self, job, message_id):
+        thread = threading.Thread(target=self.job_worker, args=(job, message_id), daemon=True)
+        self.job_threads[job] = thread
+        thread.start()
+
     def cmd_pesquisar(self, message_id):
-        if self.research_thread and self.research_thread.is_alive():
+        if self.job_running("research"):
             self.reply("Já existe uma pesquisa que você pediu em andamento. Aviso quando terminar.", message_id)
             return
         if status.is_locked():
@@ -341,27 +426,73 @@ class Bot:
                        "(espera até 30 min). Aviso quando acabar.", message_id)
         else:
             self.reply("Pesquisa iniciada. Aviso quando terminar; costuma levar de 20 a 60 minutos.", message_id)
-        self.research_thread = threading.Thread(target=self.run_research, args=(message_id,), daemon=True)
-        self.research_thread.start()
+        self.start_job("research", message_id)
 
-    def run_research(self, message_id):
-        log.info("research run requested from Telegram")
+    def request_review(self, deal, message_id):
+        with self.lock:
+            self.review_requests.add(deal)
+            running = self.job_running("review")
+        if running:
+            self.reply(f"A revisão de {deal} entra logo depois da revisão que já está rodando.", message_id)
+            return
+        busy = " Outro trabalho do agente está rodando; ela começa quando ele terminar." if status.is_locked() else ""
+        self.reply(f"Revisão da venda iniciada.{busy} Aviso quando terminar; costuma levar de 5 a 20 minutos.",
+                   message_id)
+        self.start_job("review", message_id)
+
+    def run_agent_job(self, job):
+        """Run run_agent.sh JOB like cron does (same lock); return its exit code."""
+        log.info("%s run requested from Telegram", job)
         try:
-            code = subprocess.run(["bash", str(RUN_AGENT), "research"],
+            code = subprocess.run(["bash", str(RUN_AGENT), job],
                                   env=child_env({"AGENT_SKIP_NOTIFY": "1"}),
                                   stdin=subprocess.DEVNULL).returncode
         except OSError as e:
             log.error("could not start run_agent.sh: %s", e)
             code = 1
-        log.info("research run finished with exit code %d", code)
+        log.info("%s run finished with exit code %d", job, code)
+        return code
+
+    def job_worker(self, job, message_id):
+        if job == "review":
+            self.review_worker(message_id)
+            return
+        code = self.run_agent_job(job)
         if code == 0:
             path = self.work / "Research" / "log.md"
             self.reply(tg.build_research_message(path.read_text(encoding="utf-8") if path.exists() else ""),
                        message_id)
         elif code == EXIT_LOCK_BUSY:
-            self.reply(tg.build_busy_message("research"), message_id)
+            self.reply(tg.build_busy_message(job), message_id)
         else:
-            self.reply(tg.build_failed_message("research"), message_id)
+            self.reply(tg.build_failed_message(job), message_id)
+
+    def review_worker(self, message_id):
+        """Run the review job until every deal sold via /venda has its review, so a
+        sale captured while a review was running is not left out. Replies with file
+        names only: reviews contain prices."""
+        rounds = 0
+        while True:
+            code = self.run_agent_job("review")
+            rounds += 1
+            with self.lock:
+                done = sorted(d for d in self.review_requests if (self.work / "Reviews" / f"{d}.md").exists())
+                self.review_requests.difference_update(done)
+                waiting = sorted(self.review_requests)
+                finished = code != 0 or not waiting or rounds >= REVIEW_ROUNDS
+                if finished:
+                    # Decided under the lock, so a /venda arriving now starts a new run
+                    # instead of waiting for this one. Leftovers go to cron's daily run.
+                    self.review_requests.clear()
+                    self.job_threads.pop("review", None)
+            if done:
+                self.reply(tg.build_review_message(done), message_id)
+            if finished:
+                break
+        if code == EXIT_LOCK_BUSY:
+            self.reply(tg.build_busy_message("review"), message_id)
+        elif code != 0 or waiting:
+            self.reply(tg.build_failed_message("review"), message_id)
 
     # -- questions, one at a time
 
@@ -453,7 +584,7 @@ def main():
     except ValueError:
         max_per_hour = DEFAULT_MAX_PER_HOUR
     claude_bin = os.path.expanduser(os.environ.get("CLAUDE_BIN") or "~/.local/bin/claude")
-    bot = Bot(chat_id, work, claude_bin, max(1, max_per_hour), token=token)
+    bot = Bot(chat_id, work, claude_bin, max(1, max_per_hour), token=token, vault=vault_dir())
     try:
         bot.run()
     except KeyboardInterrupt:

@@ -26,11 +26,11 @@ REPO_DIR = Path(__file__).resolve().parents[1]
 STATE_DIR = REPO_DIR / ".state"
 STATUS_FILE = STATE_DIR / "status.json"
 LOCK_FILE = STATE_DIR / "agent.lock"
-JOBS = ("research", "brief")
+JOBS = ("research", "brief")  # always listed; others (review) appear once they have run
 
 LABELS = {
     "en": {
-        "jobs": {"research": "research", "brief": "brief"},
+        "jobs": {"research": "research", "brief": "brief", "review": "sale review"},
         "running": "Running: {job} since {since} ({ago})",
         "running_unknown": "Running: a job (no details recorded)",
         "idle": "No job running.",
@@ -43,7 +43,7 @@ LABELS = {
         "minutes": "{n} min",
     },
     "pt": {
-        "jobs": {"research": "Pesquisa", "brief": "Brief semanal"},
+        "jobs": {"research": "Pesquisa", "brief": "Brief semanal", "review": "Revisão de venda"},
         "running": "Em execução: {job} desde {since} (há {ago})",
         "running_unknown": "Em execução: um trabalho (sem detalhes registrados)",
         "idle": "Nenhum trabalho em execução.",
