@@ -21,3 +21,8 @@ Os valores das colunas Status (`empty`, `partial`, `researched`) e Confiança (`
 | [[macro-brazil]] | Trajetória da Selic, inflação, emprego, renda, eleições e o efeito na demanda por carros | 2 | empty | | |
 | [[uberlandia-economy]] | População, renda, setores principais (agronegócio, logística, serviços), tendências de emprego | 3 | empty | | |
 | [[uberlandia-real-estate]] | Preço do m² por região, lançamentos e estoque, financiamento, rentabilidade de aluguel (para o trabalho futuro com imóveis) | 3 | empty | | |
+| [[vehicle-auctions]] | Leilões de veículos como canal de compra: como funcionam (bancos, seguradoras, órgãos públicos), taxas e comissão do leiloeiro, riscos (sinistro, documentação, débitos, retirada) e quais leiloeiros atuam perto de Uberlândia | 1 | empty | | |
+| [[consignment-sales]] | Venda em consignação: como as lojas trabalham com carros consignados, contrato, responsabilidades de cada lado e comissões típicas | 2 | empty | | |
+| [[sales-calendar]] | Calendário anual de vendas: 13º salário, temporada de IPVA, restituição do Imposto de Renda, feriados, volta às aulas e o efeito de cada um na demanda e nos preços | 1 | empty | | |
+| [[insurance-by-model]] | Custo do seguro de cada modelo popular e como ele pesa na escolha do comprador | 2 | empty | | |
+| [[local-auto-financing]] | Bancos e financeiras que financiam compradores de carros populares usados em Uberlândia e as exigências típicas (entrada, score, idade do veículo, prazo, taxa) | 1 | empty | | |

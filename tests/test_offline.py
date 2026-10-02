@@ -182,5 +182,19 @@ class ConfigTests(unittest.TestCase):
         self.assertFalse([rule for rule in deny if "Reviews" in rule or "Knowledge" in rule])
 
 
+class RequiredTopicsTests(unittest.TestCase):
+    def test_required_topics_are_in_the_template_index(self):
+        root = Path(__file__).resolve().parents[1]
+        research = (root / "prompts" / "research.md").read_text(encoding="utf-8")
+        index = (root / "vault-template" / "agent" / "Knowledge" / "_index.md").read_text(encoding="utf-8")
+        rows = [line for line in research.splitlines() if line.startswith("| [[")]
+        self.assertEqual([r.split("]]")[0][4:] for r in rows],
+                         ["vehicle-auctions", "consignment-sales", "sales-calendar",
+                          "insurance-by-model", "local-auto-financing"])
+        for row in rows:
+            self.assertIn(row, index.splitlines())
+            self.assertTrue(row.endswith("| empty | | |"))
+
+
 if __name__ == "__main__":
     unittest.main()

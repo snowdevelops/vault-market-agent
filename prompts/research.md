@@ -1,6 +1,16 @@
 Faça uma sessão de pesquisa para ampliar a base de conhecimento. Escreva tudo em português do Brasil. Suas regras e o formato das notas estão em CLAUDE.md; siga-os à risca.
 
-1. Leia Knowledge/_index.md.
+1. Leia Knowledge/_index.md. Se algum dos temas obrigatórios abaixo não tiver linha no índice (procure pelo nome da nota), acrescente a linha no final da tabela exatamente como está aqui, com status `empty` e sem data nem confiança. Não altere as linhas que já existem.
+
+   Temas obrigatórios:
+
+| Nota | Tema | Prioridade | Status | Última pesquisa | Confiança |
+|---|---|---|---|---|---|
+| [[vehicle-auctions]] | Leilões de veículos como canal de compra: como funcionam (bancos, seguradoras, órgãos públicos), taxas e comissão do leiloeiro, riscos (sinistro, documentação, débitos, retirada) e quais leiloeiros atuam perto de Uberlândia | 1 | empty | | |
+| [[consignment-sales]] | Venda em consignação: como as lojas trabalham com carros consignados, contrato, responsabilidades de cada lado e comissões típicas | 2 | empty | | |
+| [[sales-calendar]] | Calendário anual de vendas: 13º salário, temporada de IPVA, restituição do Imposto de Renda, feriados, volta às aulas e o efeito de cada um na demanda e nos preços | 1 | empty | | |
+| [[insurance-by-model]] | Custo do seguro de cada modelo popular e como ele pesa na escolha do comprador | 2 | empty | | |
+| [[local-auto-financing]] | Bancos e financeiras que financiam compradores de carros populares usados em Uberlândia e as exigências típicas (entrada, score, idade do veículo, prazo, taxa) | 1 | empty | | |
 
 2. Escolha até 2 temas, nesta ordem de preferência:
    - status `empty`, maior prioridade primeiro (1 antes de 2, 2 antes de 3);
