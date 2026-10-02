@@ -165,9 +165,21 @@ class ConfigTests(unittest.TestCase):
             "Edit(./Templates/**)",
             "Edit(./Market/data/**)",
             "Edit(./Market/watchlist.json)",
+            "Edit(./Market/comparables.csv)",
+            "Edit(./Market/field-notes.md)",
             "Edit(./CLAUDE.md)",
         ]))
         self.assertNotIn("allow", settings["permissions"])
+
+    def test_captured_data_is_readable_but_not_editable(self):
+        import json
+        path = Path(__file__).resolve().parents[1] / "config" / "agent-settings.json"
+        deny = json.loads(path.read_text())["permissions"]["deny"]
+        for name in ("Market/comparables.csv", "Market/field-notes.md"):
+            self.assertIn(f"Edit(./{name})", deny)
+            self.assertNotIn(f"Read(./{name})", deny)
+        # The review job writes these, so nothing may deny them.
+        self.assertFalse([rule for rule in deny if "Reviews" in rule or "Knowledge" in rule])
 
 
 if __name__ == "__main__":

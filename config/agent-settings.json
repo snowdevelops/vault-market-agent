@@ -8,6 +8,8 @@
       "Edit(./Templates/**)",
       "Edit(./Market/data/**)",
       "Edit(./Market/watchlist.json)",
+      "Edit(./Market/comparables.csv)",
+      "Edit(./Market/field-notes.md)",
       "Edit(./CLAUDE.md)"
     ]
   }
