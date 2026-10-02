@@ -1,0 +1,26 @@
+{
+ "_note": "Popular used models whose FIPE value the daily fetch records in Market/data/fipe_history.csv, so depreciation curves exist for the cars the business trades. Codes, years and fuel were checked against the official FIPE API (veiculos.fipe.org.br) on 2026-10-02. fuel is the FIPE fuel code returned with each model year (5 = flex for all of these). No personal data.",
+ "verified_on": "2026-10-02",
+ "vehicles": [
+  {"label": "Fiat Strada Freedom 1.3 CS Plus", "segment": "pickup", "fipe_code": "001527-0", "fuel": 5, "years": [2021, 2022]},
+  {"label": "Fiat Strada Working Hard 1.4 CS", "segment": "pickup", "fipe_code": "001433-8", "fuel": 5, "years": [2016, 2019, 2020]},
+  {"label": "VW Saveiro Robust 1.6 8V", "segment": "pickup", "fipe_code": "005459-3", "fuel": 5, "years": [2017, 2019, 2022]},
+  {"label": "Fiat Mobi Like 1.0", "segment": "hatch", "fipe_code": "001461-3", "fuel": 5, "years": [2017, 2019, 2022]},
+  {"label": "Fiat Argo Drive 1.0", "segment": "hatch", "fipe_code": "001494-0", "fuel": 5, "years": [2018, 2019, 2022]},
+  {"label": "Fiat Uno Drive 1.0 6V", "segment": "hatch", "fipe_code": "001486-9", "fuel": 5, "years": [2018, 2019, 2021]},
+  {"label": "Fiat Palio Attractive 1.0 Evo", "segment": "hatch", "fipe_code": "001372-2", "fuel": 5, "years": [2016, 2017]},
+  {"label": "Fiat Grand Siena Attractive 1.4 Evo", "segment": "sedan", "fipe_code": "001378-1", "fuel": 5, "years": [2016, 2019, 2021]},
+  {"label": "VW Gol 1.0 12V 5p", "segment": "hatch", "fipe_code": "005490-9", "fuel": 5, "years": [2019, 2022]},
+  {"label": "VW Voyage 1.6 MSI 8V", "segment": "sedan", "fipe_code": "005493-3", "fuel": 5, "years": [2019, 2022]},
+  {"label": "VW Polo 1.0 12V", "segment": "hatch", "fipe_code": "005479-8", "fuel": 5, "years": [2018, 2019, 2022]},
+  {"label": "Chevrolet Onix LT 1.0 8V (1a geração)", "segment": "hatch", "fipe_code": "004424-5", "fuel": 5, "years": [2016, 2019]},
+  {"label": "Chevrolet Onix LT 1.0 12V", "segment": "hatch", "fipe_code": "004517-9", "fuel": 5, "years": [2020, 2022]},
+  {"label": "Chevrolet Onix Plus LT 1.0 12V", "segment": "sedan", "fipe_code": "004518-7", "fuel": 5, "years": [2020, 2022]},
+  {"label": "Chevrolet Prisma LT 1.4", "segment": "sedan", "fipe_code": "004433-4", "fuel": 5, "years": [2016, 2019]},
+  {"label": "Hyundai HB20 Comfort 1.0", "segment": "hatch", "fipe_code": "015088-6", "fuel": 5, "years": [2016, 2019]},
+  {"label": "Hyundai HB20S Comfort 1.6", "segment": "sedan", "fipe_code": "015100-9", "fuel": 5, "years": [2016, 2019]},
+  {"label": "Renault Kwid Zen 1.0", "segment": "hatch", "fipe_code": "025266-2", "fuel": 5, "years": [2018, 2019, 2022]},
+  {"label": "Renault Sandero Expression 1.0 12V", "segment": "hatch", "fipe_code": "025244-1", "fuel": 5, "years": [2017, 2019, 2020]},
+  {"label": "Ford Ka SE 1.0 5p", "segment": "hatch", "fipe_code": "003408-8", "fuel": 5, "years": [2016, 2019, 2021]}
+ ]
+}
