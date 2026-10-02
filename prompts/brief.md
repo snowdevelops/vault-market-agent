@@ -1,7 +1,7 @@
 Escreva o brief desta semana, em português do Brasil. Suas regras estão em CLAUDE.md; siga-as à risca.
 
 Leia, nesta ordem:
-1. Market/data/latest.md e as últimas 12 semanas de Market/data/history.csv
+1. Os dados: Market/data/latest.md (indicadores, tendências de 3 e 12 meses, cesta FIPE de modelos populares e frota de Uberlândia), as últimas 12 semanas de Market/data/history.csv, Market/data/fipe_history.csv (valor FIPE mensal da cesta, para curvas de depreciação) e Market/data/fleet.csv (frota de Uberlândia por tipo, mês a mês)
 2. Knowledge/_index.md e, depois, as notas de conhecimento ligadas a qualquer coisa que tenha mudado
 3. Todas as notas em Deals/ cujo `status` não seja `sold` nem `dropped`
 4. Market/hypotheses.md
@@ -22,8 +22,10 @@ No máximo 5 linhas curtas: a mudança mais importante e o que precisa de atenç
 ## O que mudou na semana
 Só mudanças reais, cada uma com o link da fonte. Se nada importante mudou, diga isso em uma linha.
 
+Depois, em até 5 linhas, as tendências dos dados oficiais, sempre comparando com 3 e 12 meses atrás e nunca só o último valor: crédito para veículos (concessões, juros e inadimplência de pessoas físicas), depreciação da cesta FIPE (quais modelos e segmentos perdem valor mais rápido ou mais devagar) e a frota de Uberlândia por tipo. Diga o que a tendência significa para comprar e vender carros populares (inferência).
+
 ## Negócios ativos
-Para cada negócio: dias desde o anúncio comparados com `max_days_listed`, preço de anúncio atual comparado com a FIPE, movimento de contatos e uma recomendação (manter, revisar preço ou mudar de canal) com o raciocínio em duas ou três frases, usando as notas de conhecimento. Mostre os números que usou. Se não houver negócios ativos, diga isso em uma linha.
+Para cada negócio: dias desde o anúncio comparados com `max_days_listed`, preço de anúncio atual comparado com a FIPE e com a curva de depreciação do modelo ou segmento parecido na cesta FIPE, movimento de contatos e uma recomendação (manter, revisar preço ou mudar de canal) com o raciocínio em duas ou três frases, usando as notas de conhecimento. Mostre os números que usou. Se não houver negócios ativos, diga isso em uma linha.
 
 ## Hipóteses
 Para cada hipótese, diga se as evidências da semana a reforçam, a enfraquecem ou não a afetam. Acrescente linhas datadas à tabela de evidências no final de Market/hypotheses.md, mantendo as colunas que ela já tem.

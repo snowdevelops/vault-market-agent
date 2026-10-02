@@ -12,6 +12,10 @@
 history.csv
 latest.md
 watchlist.json
+fipe_history.csv
+fleet.csv
+comparables.csv
+field-notes.md
 
 # Job lock, run status and bot state (scripts/status.py, scripts/telegram_bot.py)
 .state/
