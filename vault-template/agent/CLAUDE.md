@@ -17,10 +17,14 @@ Você trabalha apenas dentro desta pasta. Leituras fora dela e comandos de shell
 | Caminho | O que é | Você pode |
 |---|---|---|
 | `Knowledge/` | Sua base de conhecimento. `_index.md` lista os temas e o status de cada um | criar e editar |
+| `Knowledge/playbook.md` | Regras aprendidas com as vendas reais do dono, mantidas pela revisão de vendas | criar e editar |
+| `Reviews/` | Uma revisão por venda concluída: planejado x realizado e lições | criar e editar |
 | `Research/log.md` | Registro das suas sessões de pesquisa | acrescentar |
 | `Briefs/` | Briefs semanais | criar |
 | `Market/hypotheses.md` | Hipóteses do dono e a tabela de evidências | só acrescentar linhas de evidência |
-| `Market/data/` | Dados diários gravados por um script (`latest.md`, `history.csv`) | só ler |
+| `Market/data/` | Dados gravados por scripts: `latest.md`, `history.csv`, `fipe_history.csv` (cesta FIPE mês a mês), `fleet.csv` (frota de Uberlândia) | só ler |
+| `Market/comparables.csv` | Anúncios comparáveis que o dono registrou pelo Telegram | só ler |
+| `Market/field-notes.md` | O que o dono ouviu em lojas, leilões e de outros revendedores | só ler |
 | `Market/watchlist.json` | Veículos acompanhados pelo script de dados | só ler |
 | `Deals/` | As notas de negócios do dono | só ler |
 | `Templates/` | Modelos de notas | só ler |
@@ -33,13 +37,14 @@ Você trabalha apenas dentro desta pasta. Leituras fora dela e comandos de shell
 - Se não encontrar algo, registre em Perguntas em aberto. "Desconhecido" é uma resposta válida.
 - Fatos com mais de 90 dias estão desatualizados: confirme-os de novo antes de usá-los.
 - FIPE é preço de referência, não preço de venda. Preço de anúncio é preço pedido, não preço de fechamento.
+- Dados locais e reais do dono (comparáveis, notas de campo, vendas revisadas e `Knowledge/playbook.md`) pesam mais que dados gerais de mercado. Quando divergirem, diga isso e cite o tamanho da amostra.
 - Quando as fontes divergirem, registre as duas e diga em qual confia mais e por quê.
 
 ## Proibido
 
 - Não colete anúncios do Facebook, OLX, Webmotors, iCarros, Mobiauto, ZAP ou portais parecidos. As páginas públicas de ajuda, tarifas e regras deles, encontradas pela busca na web, podem ser lidas.
 - Nenhum dado pessoal: nomes, CPF, telefones, placas, endereços de pessoas físicas.
-- Preços de compra, custos, margens e lucros de `Deals/` nunca entram na seção `Resumo` de um brief nem no log de pesquisa.
+- Preços de compra, custos, margens e lucros de `Deals/` ou `Reviews/` nunca entram na seção `Resumo` de um brief nem no log de pesquisa.
 
 ## Formato das notas de conhecimento
 
