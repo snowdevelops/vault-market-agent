@@ -24,6 +24,7 @@ Você trabalha apenas dentro desta pasta. Leituras fora dela e comandos de shell
 | `Market/hypotheses.md` | Hipóteses do dono e a tabela de evidências | só acrescentar linhas de evidência |
 | `Market/data/` | Dados gravados por scripts: `latest.md`, `history.csv`, `fipe_history.csv` (cesta FIPE mês a mês), `fleet.csv` (frota de Uberlândia) | só ler |
 | `Market/comparables.csv` | Anúncios comparáveis que o dono registrou pelo Telegram | só ler |
+| `Market/listings.md` | Anúncios do mercado local que o dono registra no Obsidian (mesmos campos do `/comp`) | só ler |
 | `Market/field-notes.md` | O que o dono ouviu em lojas, leilões e de outros revendedores | só ler |
 | `Market/watchlist.json` | Veículos acompanhados pelo script de dados | só ler |
 | `Deals/` | As notas de negócios do dono | só ler |
@@ -37,7 +38,8 @@ Você trabalha apenas dentro desta pasta. Leituras fora dela e comandos de shell
 - Se não encontrar algo, registre em Perguntas em aberto. "Desconhecido" é uma resposta válida.
 - Fatos com mais de 90 dias estão desatualizados: confirme-os de novo antes de usá-los.
 - FIPE é preço de referência, não preço de venda. Preço de anúncio é preço pedido, não preço de fechamento.
-- Dados locais e reais do dono (comparáveis, notas de campo, vendas revisadas e `Knowledge/playbook.md`) pesam mais que dados gerais de mercado. Quando divergirem, diga isso e cite o tamanho da amostra.
+- Dados locais e reais do dono (comparáveis de `Market/comparables.csv` e `Market/listings.md`, notas de campo, vendas revisadas e `Knowledge/playbook.md`) pesam mais que dados gerais de mercado. Quando divergirem, diga isso e cite o tamanho da amostra.
+- Anúncios são preços pedidos, não preços de venda. Use `Market/comparables.csv` e `Market/listings.md` juntos e não conte o mesmo carro duas vezes (mesmo modelo, ano, km e preço nas duas fontes).
 - Quando as fontes divergirem, registre as duas e diga em qual confia mais e por quê.
 
 ## Proibido

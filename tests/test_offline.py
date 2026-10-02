@@ -166,10 +166,21 @@ class ConfigTests(unittest.TestCase):
             "Edit(./Market/data/**)",
             "Edit(./Market/watchlist.json)",
             "Edit(./Market/comparables.csv)",
+            "Edit(./Market/listings.md)",
             "Edit(./Market/field-notes.md)",
             "Edit(./CLAUDE.md)",
         ]))
         self.assertNotIn("allow", settings["permissions"])
+
+    def test_listings_template_matches_comparables_fields(self):
+        import capture
+        path = Path(__file__).resolve().parents[1] / "vault-template" / "agent" / "Market" / "listings.md"
+        rows = [line for line in path.read_text(encoding="utf-8").splitlines() if line.startswith("|")]
+        header = [cell.strip() for cell in rows[0].strip("|").split("|")]
+        english = {"Data": "date", "Modelo": "model", "Ano": "year", "Km": "km",
+                   "Preço": "price", "Canal": "channel", "Obs": "note"}
+        self.assertEqual([english[h] for h in header], capture.COMPARABLES_HEADER)
+        self.assertEqual(len(rows), 2, "the template must not ship data rows")
 
     def test_captured_data_is_readable_but_not_editable(self):
         import json

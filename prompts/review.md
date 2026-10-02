@@ -5,7 +5,7 @@ Nesta sessão você só escreve em dois lugares: o arquivo de revisão em Review
 1. Leia:
    - a nota do negócio inteira: frontmatter, Plano de preço, Anúncios comparáveis, Histórico de preço, Registro de contatos e Resultado e lições;
    - os briefs em Briefs/ que citam o negócio (procure pelo nome da nota): o que foi previsto e recomendado, e quando;
-   - Market/comparables.csv: os comparáveis do mesmo modelo ou segmento registrados entre a compra e a venda; e Market/field-notes.md no mesmo período;
+   - Market/comparables.csv e Market/listings.md: os comparáveis do mesmo modelo ou segmento registrados entre a compra e a venda; e Market/field-notes.md no mesmo período;
    - Market/data/fipe_history.csv e Market/data/history.csv: a FIPE do modelo (ou do modelo mais parecido da cesta) e o crédito para veículos no período;
    - Knowledge/playbook.md, se existir, e as outras revisões em Reviews/.
 

@@ -51,6 +51,7 @@ The business data never touches this repository or GitHub.
 | Deal notes, costs, margins, briefs, watchlist | Private vault on the owner's machines, synced with Syncthing (no cloud) |
 | Vault path, Telegram token | `.env`, gitignored |
 | Captured comparables, field notes, leads, price changes and sales | Private vault: `Market/comparables.csv`, `Market/field-notes.md` and the deal notes |
+| Local marketplace listings typed in Obsidian | Private vault: `Market/listings.md` |
 | Sale reviews and the playbook | Private vault: `Reviews/`, `Knowledge/playbook.md` |
 | Job lock, run status, bot offset and rate-limit counters | `.state/` in the repo folder on the server, gitignored |
 | Undo journal of the last 20 captures | `.state/captures.json` on the server, gitignored. It holds the previous content of each file a capture changed, deal notes included, so `/desfazer` can restore it exactly |
@@ -65,7 +66,7 @@ The agent's limits are enforced by Claude Code's permission system, not just ask
 
 - blocks every file read outside that folder (`blockReadsOutsideWorkingDirectories`), so the rest of the vault, including personal finance notes, is invisible to it;
 - denies all shell commands;
-- denies edits to the owner's deal notes, templates, the data files, the captured comparables and field notes (`Market/comparables.csv`, `Market/field-notes.md`, which it can still read) and the agent's own rules.
+- denies edits to the owner's deal notes, templates, the data files, the captured comparables, the owner's listings and field notes (`Market/comparables.csv`, `Market/listings.md`, `Market/field-notes.md`, which it can still read) and the agent's own rules.
 
 It can create and edit `Knowledge/` (including `playbook.md`), `Reviews/` and `Briefs/`, and add evidence rows to `Market/hypotheses.md`.
 
@@ -248,6 +249,8 @@ Fields are separated by `;`, so model names can have spaces; fields in `[ ]` are
 `negócio` is matched against the note file names in `Deals/`, ignoring case, accents and `-`/`_`/spaces (`onix 2019` finds `Ônix-2019.md`). If it matches no note or several, nothing is written and the bot lists the candidates. A deal note missing the leads or price table gets it added at the template's position. Every write goes to a temporary file that then replaces the original, changes nothing else in the file, and is committed to the vault's local git repo (if there is one) as `capture: <command>`. `/desfazer` works on the last 20 captures, newest first, and refuses if the file was changed after the capture (for example in Obsidian), so it never overwrites your edits.
 
 The agent can read the captured files but its settings deny editing `Market/comparables.csv` and `Market/field-notes.md`; deal notes were already off limits.
+
+For many listings at once, type them in Obsidian instead: `Market/listings.md` is a table with the same fields as `/comp` (date, model, year, km, price, channel, note). The agent reads both sources together and treats them as asking prices; its settings deny editing this file too.
 
 ## Data sources
 All free and official; each was checked before use, and the tests parse answers saved from each one.

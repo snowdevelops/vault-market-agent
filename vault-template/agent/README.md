@@ -7,7 +7,7 @@ Copie esta pasta para o seu vault do Obsidian e dê a ela o nome definido em `AG
 - `Research/log.md`: uma entrada curta por sessão de pesquisa.
 - `Briefs/`: briefs semanais.
 - `Deals/`: suas notas de negócios (o agente lê, mas nunca edita). Copie `Templates/vehicle-deal.md` para começar uma.
-- `Market/`: dados do script diário, sua lista de veículos acompanhados, suas hipóteses e os dados que você registra pelo Telegram (`comparables.csv` e `field-notes.md`, criados no primeiro uso).
+- `Market/`: dados do script diário, sua lista de veículos acompanhados, suas hipóteses e os dados que você registra pelo Telegram (`comparables.csv` e `field-notes.md`, criados no primeiro uso) e `listings.md`, onde você anota à mão os anúncios do mercado local.
 - `Reviews/`: uma revisão por venda, escrita pelo agente depois de cada `/venda`. As lições vão para `Knowledge/playbook.md`.
 
 Os nomes de pastas, de notas e as chaves do frontmatter ficam em inglês porque os scripts e o Dataview dependem deles.

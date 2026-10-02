@@ -9,6 +9,7 @@
       "Edit(./Market/data/**)",
       "Edit(./Market/watchlist.json)",
       "Edit(./Market/comparables.csv)",
+      "Edit(./Market/listings.md)",
       "Edit(./Market/field-notes.md)",
       "Edit(./CLAUDE.md)"
     ]
