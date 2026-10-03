@@ -6,6 +6,7 @@ import stat
 import sys
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -224,6 +225,85 @@ class CommandReplyTests(unittest.TestCase):
     def test_non_text_message(self):
         self.bot.handle_update({"update_id": 1, "message": {"message_id": 1, "chat": {"id": int(OWNER)}, "photo": []}})
         self.assertIn("texto", self.api.sent()[0])
+
+
+def tap(data, chat_id=OWNER, update_id=50, query_id="q1"):
+    return {"update_id": update_id, "callback_query": {
+        "id": query_id, "data": data, "from": {"id": int(chat_id)},
+        "message": {"message_id": 77, "chat": {"id": int(chat_id)}}}}
+
+
+class OpportunityCommandTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.work = Path(self.tmp.name)
+        self.api = FakeApi()
+        self.bot = bot.Bot(OWNER, self.work, "claude", state_path=self.work / "bot.json", api=self.api)
+        (self.work / "Market").mkdir()
+        today = date.today().isoformat()
+        rows = [("Fiat Strada", "20.000", "Uberlândia, MG; fb:1438553554906296"),
+                ("Fiat Strada", "26.000", "b"), ("Fiat Strada", "26.500", "c")]
+        (self.work / "Market" / "listings.md").write_text(
+            "| Data | Modelo | Ano | Km | Preço | Canal | Obs |\n|---|---|---|---|---|---|---|\n"
+            + "".join(f"| {today} | {m} | 2012 |  | {p} | Marketplace | {o} |\n" for m, p, o in rows),
+            encoding="utf-8")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def markups(self):
+        return [json.loads(p["reply_markup"]) for m, p in self.api.calls if m == "sendMessage" and "reply_markup" in p]
+
+    def test_aliases(self):
+        for text in ("/oportunidades", "/oportunidade", "/ofertas"):
+            self.assertEqual(bot.parse_command(text), ("command", "oportunidades"))
+
+    def test_list_has_one_numbered_button_per_opportunity(self):
+        self.bot.handle_update(update("/oportunidades"))
+        self.assertIn("1. Fiat Strada 2012 — R$ 20.000", self.api.sent()[0])
+        [markup] = self.markups()
+        [[button]] = markup["inline_keyboard"]
+        self.assertEqual(button["text"], "1")
+        self.assertTrue(button["callback_data"].startswith(bot.OPPORTUNITY_PREFIX))
+
+    def test_empty_list_has_no_buttons(self):
+        (self.work / "Market" / "listings.md").unlink()
+        self.bot.handle_update(update("/oportunidades"))
+        self.assertIn("Nenhuma oportunidade", self.api.sent()[0])
+        self.assertEqual(self.markups(), [])
+
+    def test_tap_shows_detail_with_link_button(self):
+        self.bot.handle_update(update("/oportunidades"))
+        data = self.markups()[0]["inline_keyboard"][0][0]["callback_data"]
+        self.api.calls.clear()
+        self.bot.handle_update(tap(data))
+        self.assertEqual(self.api.calls[0], ("answerCallbackQuery", {"callback_query_id": "q1"}))
+        self.assertIn("24% abaixo da média de R$ 26.250", self.api.sent()[0])
+        [[button]] = self.markups()[0]["inline_keyboard"]
+        self.assertEqual(button["url"], "https://www.facebook.com/marketplace/item/1438553554906296/")
+        sent = [p for m, p in self.api.calls if m == "sendMessage"][0]
+        self.assertEqual(json.loads(sent["reply_parameters"])["message_id"], 77)
+
+    def test_unknown_key(self):
+        self.bot.handle_update(tap("op:000000000000"))
+        self.assertIn("não está mais na tabela", self.api.sent()[0])
+
+    def test_tap_from_other_chat_is_only_counted(self):
+        with self.assertLogs("telegram_bot", "INFO"):
+            self.bot.handle_update(tap("op:000000000000", chat_id="555"))
+        self.assertEqual(self.api.calls, [])
+        self.assertEqual(self.bot.ignored, 1)
+
+    def test_malformed_taps_are_rejected(self):
+        self.assertFalse(bot.callback_allowed({"callback_query": {"id": "q", "data": "op:x"}}, OWNER))
+        self.assertFalse(bot.callback_allowed({"callback_query": "junk"}, OWNER))
+        self.assertFalse(bot.callback_allowed(tap("op:x", chat_id="-123456789"), OWNER))
+        self.assertTrue(bot.callback_allowed(tap("op:x"), OWNER))
+
+    def test_polling_asks_for_button_taps(self):
+        self.bot.state["offset"] = 1
+        self.bot.poll_once()
+        self.assertEqual(json.loads(self.api.calls[0][1]["allowed_updates"]), ["message", "callback_query"])
 
 
 class StateTests(unittest.TestCase):

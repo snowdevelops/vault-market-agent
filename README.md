@@ -7,7 +7,7 @@ Built to run on a home server on a regular Claude Pro subscription, with no paid
 ## What it does
 
 - **Daily:** pulls the Selic rate, IPCA inflation, the auto-loan rate, new auto loans and the auto-loan default rate from Banco Central, the Focus survey, FIPE prices for tracked vehicles and for a basket of 20 popular used models, and Uberlândia's vehicle fleet from Senatran (monthly). No LLM involved. See "Data sources" below.
-- **Field data from the phone:** `/comp`, `/lead`, `/preco`, `/venda` and `/nota` in Telegram write comparables, leads, price changes, sales and field notes straight into the vault. Plain Python, no Claude usage; `/desfazer` undoes the last one.
+- **Field data from the phone:** `/comp`, `/lead`, `/preco`, `/venda` and `/nota` in Telegram write comparables, leads, price changes, sales and field notes straight into the vault. Plain Python, no Claude usage; `/desfazer` undoes the last one. `/oportunidades` lists local listings priced well below comparable ones and opens the one you pick.
 - **Research (a few times a week):** Claude Code researches the topics the business depends on (vehicle documentation, reseller tax rules, credit, the local market, pricing, sales channels, and more) and maintains a sourced knowledge base. It picks what to research next on its own, so the knowledge does not depend on the owner feeding it.
 - **Weekly:** Claude Code reads the fresh data, the knowledge base, the open deals and the owner's market hypotheses, researches the past week's news, and writes a brief with recommendations. It suggests; the owner decides.
 - **Learning from each sale:** after `/venda` (and daily as a safety net) a review job compares what was planned and predicted with what happened, writes `Reviews/<deal>.md`, and keeps `Knowledge/playbook.md`, a list of rules learned from real sales with how many deals support each. Briefs and answers weigh this local data above general market data.
@@ -245,12 +245,13 @@ Fields are separated by `;`, so model names can have spaces; fields in `[ ]` are
 | `/nota texto` | `/nota Leilão de sexta teve muitos Onix 2019 com sinistro` | a dated line in `Market/field-notes.md` |
 | `/negocios` | | lists deals that are not `sold` or `dropped`, with days listed |
 | `/desfazer` | | restores the file changed by the most recent capture, exactly as it was |
+| `/oportunidades` | | read-only: lists up to 10 listings from the last 30 days priced more than 15% below at least 2 others of the same model (model year ±2); tapping a number shows that listing with a button that opens it |
 
 `negócio` is matched against the note file names in `Deals/`, ignoring case, accents and `-`/`_`/spaces (`onix 2019` finds `Ônix-2019.md`). If it matches no note or several, nothing is written and the bot lists the candidates. A deal note missing the leads or price table gets it added at the template's position. Every write goes to a temporary file that then replaces the original, changes nothing else in the file, and is committed to the vault's local git repo (if there is one) as `capture: <command>`. `/desfazer` works on the last 20 captures, newest first, and refuses if the file was changed after the capture (for example in Obsidian), so it never overwrites your edits.
 
 The agent can read the captured files but its settings deny editing `Market/comparables.csv` and `Market/field-notes.md`; deal notes were already off limits.
 
-For many listings at once, type them in Obsidian instead: `Market/listings.md` is a table with the same fields as `/comp` (date, model, year, km, price, channel, note). The agent reads both sources together and treats them as asking prices; its settings deny editing this file too.
+For many listings at once, type them in Obsidian instead: `Market/listings.md` is a table with the same fields as `/comp` (date, model, year, km, price, channel, note). The agent reads both sources together and treats them as asking prices; its settings deny editing this file too. `/oportunidades` (`scripts/opportunities.py`) uses the same two sources without counting a car twice. It leaves out prices under R$ 5.000, over R$ 300.000 or under 40% of the comparable average, and rows whose Obs says `vendido` or `saiu do ar`. To open a listing from Telegram, put its link in Obs: the full URL, or `fb:` plus the Marketplace listing number.
 
 ## Data sources
 All free and official; each was checked before use, and the tests parse answers saved from each one.

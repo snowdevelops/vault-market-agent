@@ -12,14 +12,17 @@ Commands (replies are in Portuguese, for the owner):
   /comp /lead /preco /venda /nota
               capture field data into the agent folder (scripts/capture.py, no LLM)
   /negocios   open deals and days listed
+  /oportunidades
+              local listings priced well below comparable ones (scripts/opportunities.py);
+              tapping a number shows that listing with a button that opens it
   /desfazer   undo the most recent capture
   /ajuda      list the commands
   any other text is a question for the agent
 
 Safety:
   - Long polling with getUpdates; nothing listens on a port.
-  - Only TELEGRAM_CHAT_ID is answered. Other chats are dropped silently and only
-    their count is logged, never their content.
+  - Only TELEGRAM_CHAT_ID is answered, messages and button taps alike. Other chats
+    are dropped silently and only their count is logged, never their content.
   - Questions run `claude -p` inside the agent folder with config/agent-settings.json
     and read-only tools. The question goes in on stdin, never through a shell or as
     a command-line argument.
@@ -48,6 +51,7 @@ from pathlib import Path
 import capture
 import deals
 import notify_telegram as tg
+import opportunities
 import status
 from common import REPO_DIR, agent_dir, load_env, vault_dir
 
@@ -68,8 +72,12 @@ EXIT_CONFIG = 78             # systemd does not restart on this code (see deploy
 EXIT_LOCK_BUSY = 75          # run_agent.sh: another job held the lock too long
 
 CAPTURE_COMMANDS = ("comp", "lead", "preco", "venda", "nota")
-COMMANDS = ("status", "ultimo", "resumo", "pesquisar", "negocios", "desfazer", "ajuda") + CAPTURE_COMMANDS
-ALIASES = {"start": "ajuda", "help": "ajuda", "último": "ultimo", "negócios": "negocios", "preço": "preco"}
+COMMANDS = ("status", "ultimo", "resumo", "pesquisar", "negocios", "oportunidades", "desfazer",
+            "ajuda") + CAPTURE_COMMANDS
+ALIASES = {"start": "ajuda", "help": "ajuda", "último": "ultimo", "negócios": "negocios", "preço": "preco",
+           "oportunidade": "oportunidades", "ofertas": "oportunidades"}
+OPPORTUNITY_PREFIX = "op:"   # button data: op:<listing key>
+BUTTONS_PER_ROW = 5
 REVIEW_ROUNDS = 3            # review runs per /venda burst before giving up on a missing review
 
 HELP = """Comandos:
@@ -78,6 +86,7 @@ HELP = """Comandos:
 /resumo - o Resumo do brief semanal mais recente
 /pesquisar - começar uma sessão de pesquisa agora
 /negocios - negócios ativos e dias anunciados
+/oportunidades - anúncios bem abaixo dos parecidos; toque num número para abrir o anúncio
 /ajuda - esta lista
 
 Registrar dados de campo (separe os campos com ; e os entre [ ] são opcionais). Não usa o Claude:
@@ -149,6 +158,22 @@ def is_allowed(update, chat_id):
     if not isinstance(chat, dict) or chat.get("id") is None:
         return False
     return str(chat["id"]).strip() == str(chat_id).strip()
+
+
+def callback_allowed(update, chat_id):
+    """True only for a button tap on a message in the owner's chat."""
+    query = update.get("callback_query") if isinstance(update, dict) else None
+    message = query.get("message") if isinstance(query, dict) else None
+    chat = message.get("chat") if isinstance(message, dict) else None
+    if not isinstance(chat, dict) or chat.get("id") is None or not isinstance(query.get("id"), str):
+        return False
+    return str(chat["id"]).strip() == str(chat_id).strip()
+
+
+def opportunity_keyboard(ops):
+    """Inline keyboard with one numbered button per opportunity."""
+    buttons = [{"text": str(i), "callback_data": OPPORTUNITY_PREFIX + op["key"]} for i, op in enumerate(ops, 1)]
+    return {"inline_keyboard": [buttons[i:i + BUTTONS_PER_ROW] for i in range(0, len(buttons), BUTTONS_PER_ROW)]}
 
 
 def utf16_len(text):
@@ -298,12 +323,15 @@ class Bot:
 
     # -- Telegram output
 
-    def reply(self, text, reply_to=None):
-        for i, chunk in enumerate(split_message(text) or ["(vazio)"]):
+    def reply(self, text, reply_to=None, markup=None):
+        chunks = split_message(text) or ["(vazio)"]
+        for i, chunk in enumerate(chunks):
             params = {"chat_id": self.chat_id, "text": chunk, "disable_web_page_preview": "true"}
             if reply_to and i == 0:
                 params["reply_parameters"] = json.dumps(
                     {"message_id": reply_to, "allow_sending_without_reply": True})
+            if markup and i == len(chunks) - 1:
+                params["reply_markup"] = json.dumps(markup)
             try:
                 self.api("sendMessage", params)
             except Exception as e:  # keep going: one failed send must not kill the bot
@@ -321,6 +349,9 @@ class Bot:
     # -- incoming updates
 
     def handle_update(self, update, now=None):
+        if isinstance(update, dict) and "callback_query" in update:
+            self.handle_callback(update)
+            return
         if not is_allowed(update, self.chat_id):
             self.ignored += 1
             log.info("ignored an update that is not from the owner's chat (total ignored: %d)", self.ignored)
@@ -342,6 +373,22 @@ class Bot:
             self.reply(f"Comando desconhecido: {value}\n\n{HELP}", message_id)
         elif kind == "question":
             self.ask(value, message_id, now if now is not None else time.time())
+
+    def handle_callback(self, update):
+        if not callback_allowed(update, self.chat_id):
+            self.ignored += 1
+            log.info("ignored a button tap that is not from the owner's chat (total ignored: %d)", self.ignored)
+            return
+        query = update["callback_query"]
+        try:  # stop the button's loading spinner even if the rest fails
+            self.api("answerCallbackQuery", {"callback_query_id": query["id"]})
+        except Exception as e:
+            log.warning("answerCallbackQuery failed: %s", redact(e, self.token))
+        data = str(query.get("data") or "")
+        message_id = query["message"].get("message_id")
+        if data.startswith(OPPORTUNITY_PREFIX):
+            log.info("opportunity opened")
+            self.show_opportunity(data[len(OPPORTUNITY_PREFIX):], message_id)
 
     def ask(self, question, message_id, now):
         allowed, times = rate_limit(self.state["question_times"], now, self.max_per_hour)
@@ -389,6 +436,20 @@ class Bot:
 
     def cmd_negocios(self, message_id):
         self.reply(format_open_deals(deals.open_deals(self.work / "Deals")), message_id)
+
+    def cmd_oportunidades(self, message_id):
+        ops = opportunities.find_opportunities(opportunities.load_rows(self.work))
+        self.reply(opportunities.format_list(ops), message_id, opportunity_keyboard(ops) if ops else None)
+
+    def show_opportunity(self, key, message_id):
+        rows = opportunities.load_rows(self.work)
+        row = opportunities.find_row(rows, key)
+        if row is None:
+            self.reply("Esse anúncio não está mais na tabela. Mande /oportunidades de novo.", message_id)
+            return
+        link = opportunities.listing_link(row["Obs"])
+        markup = {"inline_keyboard": [[{"text": "Abrir anúncio", "url": link}]]} if link else None
+        self.reply(opportunities.format_detail(row, rows), message_id, markup)
 
     def cmd_desfazer(self, message_id):
         self.reply(self.capture.undo(), message_id)
@@ -539,7 +600,7 @@ class Bot:
         updates = self.api("getUpdates", {
             "offset": self.state["offset"] or 0,
             "timeout": POLL_TIMEOUT,
-            "allowed_updates": json.dumps(["message"]),
+            "allowed_updates": json.dumps(["message", "callback_query"]),
         }, timeout=POLL_TIMEOUT + 15) or []
         for update in updates:
             # Save first: if handling crashes the bot, this update is not retried forever.

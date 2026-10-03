@@ -12,7 +12,7 @@ Como preencher:
 - **Ano**: o ano do modelo (em `2018/2019`, escreva `2019`).
 - **Km** e **Preço**: como estão no anúncio (`65.000`, `89.900` ou `R$ 89.900,00`).
 - **Canal**: onde viu (Marketplace, OLX, Webmotors, loja, grupo de WhatsApp...).
-- **Obs**: cidade ou bairro, estado do carro, e se depois foi vendido, baixou de preço ou saiu do ar.
+- **Obs**: cidade ou bairro, estado do carro, e se depois foi vendido, baixou de preço ou saiu do ar. Para abrir o anúncio pelo `/oportunidades` do Telegram, inclua o link: a URL completa ou `fb:` e o número do anúncio do Marketplace.
 - Nunca escreva nome, telefone ou placa de ninguém.
 - Preço de anúncio é preço pedido, não preço de venda.
 
